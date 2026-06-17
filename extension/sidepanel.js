@@ -5,7 +5,7 @@ const $ = (id) => document.getElementById(id);
 const show = (el, on) => el.classList.toggle('hide', !on);
 
 let token = null, gistId = null, map = { version: 1, tags: {} };
-let type = 'redirect', editing = null, authTabId = null;
+let type = 'redirect', editing = null, authTabId = null, me = '';
 
 // ── views ────────────────────────────────────────────────────────────────────
 async function boot() {
@@ -14,7 +14,7 @@ async function boot() {
   show($('app'), !!token);
   show($('acct'), !!token);
   if (!token) return;
-  $('who').textContent = '@' + (await getUser());
+  me = await getUser(); $('who').textContent = '@' + me;
   try { ({ id: gistId, map } = await readMap(token)); } catch (e) { setMsg(e.message); }
   renderList();
   newTag();
@@ -64,7 +64,7 @@ $('tPage').onclick = () => setType('page');
 
 // ── live preview ───────────────────────────────────────────────────────────────
 const slugify = (s) => s.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
-$('slug').oninput = () => { $('preview').innerHTML = `neves.cloud/tapto/#<b>${slugify($('slug').value) || '…'}</b>`; };
+$('slug').oninput = () => { $('preview').innerHTML = `neves.cloud/tapto/#u/${me}/<b>${slugify($('slug').value) || '…'}</b>`; };
 
 // ── tag list (navigate: edit / delete) ─────────────────────────────────────────
 function destLabel(t) { return t.type === 'page' ? `note · ${t.title || 'untitled'}` : (t.url || ''); }
@@ -138,7 +138,7 @@ $('save').onclick = async () => {
 
 // ── result (QR + URL + copy) ───────────────────────────────────────────────────
 function showResult(slug) {
-  const url = tagUrl(slug);
+  const url = tagUrl(me, slug);
   const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
   $('qr').innerHTML = qr.createSvgTag({ scalable: true, margin: 0 });
   $('url').textContent = url;

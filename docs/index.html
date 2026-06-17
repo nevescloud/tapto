@@ -22,7 +22,6 @@
          -webkit-font-smoothing:antialiased; -webkit-text-size-adjust:100%; }
   a { color:inherit; }
 
-  /* landing — one centered screen, no scroll */
   #landing { min-height:100dvh; display:grid; place-items:center; padding:32px; }
   .card { width:100%; max-width:25rem; text-align:center; }
   .brand { font-size:1.5rem; font-weight:650; letter-spacing:-.02em; }
@@ -37,13 +36,12 @@
   .btn-ghost:hover { border-color:var(--muted); }
   .badge::after { content:"soon"; font-size:.6rem; text-transform:uppercase; letter-spacing:.05em;
                   margin-left:2px; opacity:.6; }
-  .demo { margin-top:26px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.85rem; color:var(--muted); }
+  .demo { margin-top:26px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.82rem; color:var(--muted); }
   .demo b { color:var(--ink); }
   .demo a { text-decoration:underline; text-underline-offset:2px; }
   footer { margin-top:30px; font-size:.8rem; color:var(--muted); }
   footer a { text-decoration:none; }
 
-  /* resolver */
   #app { min-height:100dvh; display:grid; place-items:center; text-align:center; padding:24px; }
   .spin { width:26px; height:26px; border:3px solid var(--line); border-top-color:var(--ink);
           border-radius:50%; animation:r .8s linear infinite; margin:0 auto; }
@@ -66,7 +64,7 @@
       <a class="btn btn-primary badge" href="#" aria-disabled="true">Get the creator</a>
       <a class="btn btn-ghost" href="https://github.com/nevescloud/tapto">Source</a>
     </div>
-    <div class="demo">neves.cloud/tapto/<b>#desk</b> · <a href="#desk">tap it</a></div>
+    <div class="demo">neves.cloud/tapto/#u/jonasneves/<b>desk</b> · <a href="#u/jonasneves/desk">tap it</a></div>
     <footer><a href="https://neves.cloud">neves.cloud</a></footer>
   </div>
 </div>
@@ -75,43 +73,64 @@
 <p role="status" aria-live="polite" id="sr" class="muted" style="position:absolute;left:-9999px">Loading…</p>
 
 <script type="module">
-// On a #slug, resolve through the owner's public tag map (a gist). Bare URL → landing.
-const OWNER = 'jonasneves', GIST_FILE = 'tapto.json', LOCAL_FALLBACK = 'tags.json';
+// Multi-tenant resolver. A tag bakes  neves.cloud/tapto/#u/<user>/<slug>  — the
+// fragment carries WHOSE map to read, so one static page serves everyone. This page
+// only READS the user's public gist; editing happens in the creator extension.
+const GIST_FILE = 'tapto.json';
+const HOME_OWNER = 'jonasneves';      // only this owner gets the committed offline fallback
+const LOCAL_FALLBACK = 'tags.json';
+
 const app = document.getElementById('app');
 const sr  = document.getElementById('sr');
 const say = (m) => { sr.textContent = m; };
-const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-const slugFromHash = () => decodeURIComponent(location.hash.replace(/^#/, '').split('?')[0]).trim().replace(/^\/+|\/+$/g, '');
+const esc = (s) => String(s).replace(/[&<>"']/g, c =>
+  ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 
-async function loadTags() {
+// #u/<user>/<slug> → {user, slug}; bare #<slug> → {user:null}; empty → null (landing).
+function parseHash() {
+  const h = decodeURIComponent(location.hash.replace(/^#/, '').split('?')[0]).replace(/^\/+|\/+$/g, '');
+  if (!h) return null;
+  const p = h.split('/');
+  if (p[0] === 'u' && p.length >= 3) return { user: p[1], slug: p.slice(2).join('/') };
+  return { user: null, slug: h };
+}
+
+async function loadTags(user) {
   try {
-    const r = await fetch(`https://api.github.com/users/${OWNER}/gists?per_page=100`, { headers: { Accept: 'application/vnd.github+json' } });
+    const r = await fetch(`https://api.github.com/users/${user}/gists?per_page=100`,
+      { headers: { Accept: 'application/vnd.github+json' } });
     if (r.ok) {
       const g = (await r.json()).find(g => g.files && g.files[GIST_FILE]);
       if (g) { const raw = await fetch(g.files[GIST_FILE].raw_url); if (raw.ok) return await raw.json(); }
     }
   } catch { /* fall through */ }
-  const lr = await fetch(LOCAL_FALLBACK, { cache: 'no-store' });
-  if (!lr.ok) throw new Error('no source');
-  return await lr.json();
+  if (user === HOME_OWNER) {
+    const lr = await fetch(LOCAL_FALLBACK, { cache: 'no-store' });
+    if (lr.ok) return await lr.json();
+  }
+  throw new Error('no source');
 }
 
-const msg = (title, detail) => { say(title); app.innerHTML = `<div><h1>${esc(title)}</h1><p class="muted">${esc(detail||'')}</p></div>`; };
+const msg = (title, detail) => { say(title);
+  app.innerHTML = `<div><h1>${esc(title)}</h1><p class="muted">${esc(detail||'')}</p></div>`; };
 
 async function resolve() {
-  const slug = slugFromHash();
-  if (!slug) { document.documentElement.classList.remove('resolving'); return; }
+  const h = parseHash();
+  if (!h) { document.documentElement.classList.remove('resolving'); return; } // → landing
   document.documentElement.classList.add('resolving');
+  if (!h.user) return msg('Incomplete tag link', 'This link is missing its account — it should look like …/#u/<user>/<slug>.');
   let tags;
-  try { tags = await loadTags(); } catch { return msg('Can’t reach tags', 'Try again in a moment.'); }
-  const tag = (tags.tags || tags)[slug];
-  if (!tag) return msg('Unknown tag', `No destination set for “${slug}”.`);
+  try { tags = await loadTags(h.user); }
+  catch { return msg('Can’t reach tags', `Couldn’t load @${h.user}’s tags. Try again in a moment.`); }
+  const tag = (tags.tags || tags)[h.slug];
+  if (!tag) return msg('Unknown tag', `@${h.user} has no destination set for “${h.slug}”.`);
   if (tag.type === 'page') { say(tag.title || 'Page');
     app.innerHTML = `<div>${tag.title?`<h1>${esc(tag.title)}</h1>`:''}<div class="body">${esc(tag.body||'')}</div></div>`; return; }
   if (tag.url) { say('Redirecting…');
-    app.innerHTML = `<div><div class="spin" aria-hidden="true"></div><p class="muted" style="margin-top:14px">Taking you to <a href="${esc(tag.url)}">${esc(tag.url)}</a>…</p></div>`;
-    location.replace(tag.url); return; }
-  msg('Misconfigured tag', `“${slug}” has no url or page body.`);
+    app.innerHTML = `<div><div class="spin" aria-hidden="true"></div>
+      <p class="muted" style="margin-top:14px">Taking you to <a href="${esc(tag.url)}">${esc(tag.url)}</a>…</p></div>`;
+    location.replace(tag.url); return; } // replace() → no back-button pollution
+  msg('Misconfigured tag', `“${h.slug}” has no url or page body.`);
 }
 addEventListener('hashchange', resolve);
 resolve();

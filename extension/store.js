@@ -112,4 +112,6 @@ export async function writeMap(token, id, map) {
   return (await r.json()).id;
 }
 
-export function tagUrl(slug) { return CONFIG.RESOLVER_BASE + '#' + encodeURIComponent(slug); }
+export function tagUrl(user, slug) {
+  return CONFIG.RESOLVER_BASE + '#u/' + encodeURIComponent(user) + '/' + encodeURIComponent(slug);
+}
