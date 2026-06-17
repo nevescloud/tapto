@@ -1,7 +1,7 @@
 # tapto
 
 Reprogrammable NFC/QR tags. A tag carries a short, stable URL —
-`https://neves.cloud/tapto/#<slug>` — and *where it goes* lives in editable config,
+`https://neves.cloud/tapto/#u/<user>/<slug>` — and *where it goes* lives in editable config,
 not baked into the tag. Repoint a tag by editing config; never rewrite the tag.
 
 The same slug URL works on any carrier: an NFC tag, a printed QR code, or a plain
@@ -11,7 +11,7 @@ slug, so the printed code is dynamic too.
 ## How it works
 
 ```
-tap / scan ─▶ neves.cloud/tapto/#<slug> ─▶ look up <slug> in the tag map ─▶ redirect or render
+tap / scan ─▶ neves.cloud/tapto/#u/<user>/<slug> ─▶ look up <slug> in the tag map ─▶ redirect or render
 ```
 
 - **Resolver** (`index.html`) — a static page. The `#slug` fragment never leaves the
