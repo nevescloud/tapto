@@ -1,4 +1,4 @@
-.PHONY: help oauth-app set-client-id dev
+.PHONY: help oauth-app set-client-id dev package
 
 # GitHub OAuth App for the creator's sign-in. Device Flow (public client, NO
 # secret, NO callback exchange) — so the only output to wire up is the Client ID,
@@ -8,14 +8,18 @@ OAUTH_HOMEPAGE := https://neves.cloud/tapto
 # Device Flow ignores the callback, but GitHub's form requires the field — reuse homepage.
 OAUTH_CALLBACK := https://neves.cloud/tapto
 
+VERSION := $(shell python3 -c "import json;print(json.load(open('extension/manifest.json'))['version'])")
+PKG     := dist/tapto-extension-v$(VERSION).zip
+
 help:
 	@echo ""
 	@echo "\033[2mOne-time setup\033[0m"
 	@echo "  \033[36moauth-app\033[0m       Open GitHub's OAuth App registration (prefilled, nevescloud-owned)"
 	@echo "  \033[36mset-client-id\033[0m   ID=Ov23li…  → write CONFIG.CLIENT_ID into extension/store.js"
 	@echo ""
-	@echo "\033[2mDev\033[0m"
+	@echo "\033[2mDev / release\033[0m"
 	@echo "  \033[36mdev\033[0m             Serve docs/ at http://localhost:8000 (landing + resolver)"
+	@echo "  \033[36mpackage\033[0m         Build the Web Store zip → dist/ (manifest at root, src-only files excluded)"
 	@echo ""
 
 # Open GitHub's OAuth App registration, prefilled. GitHub has no API to create
@@ -49,3 +53,13 @@ set-client-id:
 # but the landing + #slug resolver behave identically).
 dev:
 	@cd docs && python3 -m http.server 8000
+
+# Package the extension into a clean Web Store zip: manifest.json at the ZIP ROOT
+# (CWS requirement), source-only files (icon.svg, *.mjs, .DS_Store) excluded.
+# Output → dist/ (gitignored). Version comes from extension/manifest.json.
+package:
+	@rm -rf dist && mkdir -p dist
+	@cd extension && zip -rqX ../$(PKG) . -x "icons/icon.svg" "*.DS_Store" "*.mjs" "__MACOSX/*"
+	@echo "built $(PKG)  ($(VERSION))"
+	@unzip -l $(PKG) | awk 'NR>3 && $$4!=""{print "  "$$4}' | grep -v "^  $$"
+	@unzip -l $(PKG) | grep -q " manifest.json$$" && echo "✓ manifest.json at zip root" || { echo "✗ manifest NOT at root"; exit 1; }

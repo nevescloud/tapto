@@ -1,2 +1,4 @@
 .playwright-mcp/
 tapto-extension-*.zip
+dist/
+.DS_Store
