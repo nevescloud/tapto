@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>tapto</title>
+<style>
+  :root {
+    --bg:#fbfbfa; --surface:#fff; --subtle:#f4f3f0; --ink:#15140f; --muted:#6a685f;
+    --faint:#9a988e; --line:#e7e5df; --line-strong:#d8d5cc; --focus:#0a84ff;
+    --r:11px; --pad:16px;
+    --font:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,'SF Mono',Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0d0d0c; --surface:#161614; --subtle:#1d1d1a; --ink:#ededea; --muted:#8a877e;
+            --faint:#6f6c64; --line:#262521; --line-strong:#37362f; --focus:#0a84ff; }
+  }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; }
+  body { background:var(--bg); color:var(--ink); font-family:var(--font);
+         font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+  :focus-visible { outline:2px solid var(--focus); outline-offset:2px; border-radius:6px; }
+  h2 { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em;
+       color:var(--muted); margin:0 0 9px; }
+  .hide { display:none !important; }
+
+  /* app bar */
+  .appbar { position:sticky; top:0; z-index:2; display:flex; align-items:center; justify-content:space-between;
+            padding:12px var(--pad); background:color-mix(in srgb,var(--bg) 86%,transparent);
+            backdrop-filter:saturate(1.4) blur(10px); border-bottom:1px solid var(--line); }
+  .logo { display:flex; align-items:center; gap:8px; font-size:16px; font-weight:650; letter-spacing:-.02em; }
+  .logo svg { display:block; }
+  .acct { display:flex; align-items:center; gap:10px; font-size:12px; color:var(--muted); }
+
+  main { padding:var(--pad); }
+  .lede { color:var(--muted); margin:2px 0 16px; }
+
+  /* controls */
+  label { display:block; font-weight:550; margin:0 0 5px; }
+  label .hint { color:var(--muted); font-weight:400; }
+  input, textarea { width:100%; font:inherit; color:var(--ink); background:var(--surface);
+                    border:1px solid var(--line-strong); border-radius:var(--r); padding:10px 12px; min-height:40px; }
+  input::placeholder, textarea::placeholder { color:var(--faint); }
+  textarea { resize:vertical; min-height:60px; }
+  .field + .field { margin-top:13px; }
+  .preview { font-family:var(--mono); font-size:12px; color:var(--muted); margin:6px 2px 0; }
+  .preview b { color:var(--ink); }
+
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; width:100%;
+         min-height:44px; padding:0 16px; border-radius:var(--r); border:1px solid transparent;
+         font:inherit; font-weight:600; cursor:pointer; -webkit-user-select:none; user-select:none; }
+  .btn.primary { background:var(--ink); color:var(--bg); }
+  .btn.primary:hover { opacity:.9; }
+  .btn.ghost { background:var(--surface); color:var(--ink); border-color:var(--line-strong); }
+  .btn.ghost:hover { border-color:var(--muted); }
+  .btn.link { background:none; border:0; min-height:34px; color:var(--muted); font-weight:500; width:auto;
+              margin:8px auto 0; display:block; text-decoration:underline; text-underline-offset:2px; }
+  .btn.link:hover { color:var(--ink); }
+  .btn:disabled { opacity:.5; cursor:default; }
+  .actions { display:flex; gap:8px; margin-top:16px; }
+
+  /* segmented control (native idiom) */
+  .seg { display:flex; gap:3px; background:var(--subtle); border:1px solid var(--line); border-radius:var(--r); padding:3px; }
+  .seg button { flex:1; min-height:36px; border:0; border-radius:8px; background:transparent;
+                color:var(--muted); font:inherit; font-weight:550; cursor:pointer; }
+  .seg button[aria-pressed="true"] { background:var(--surface); color:var(--ink);
+                box-shadow:0 1px 2px rgba(0,0,0,.12); }
+
+  /* tag list */
+  .list { list-style:none; margin:0 0 22px; padding:0; }
+  .list .empty { color:var(--muted); padding:12px; background:var(--subtle); border-radius:var(--r); text-align:center; }
+  .row { display:flex; gap:7px; align-items:stretch; }
+  .row + .row { margin-top:7px; }
+  .row .open { flex:1; display:flex; align-items:center; justify-content:space-between; gap:10px;
+               min-height:44px; padding:8px 12px; text-align:left; background:var(--surface);
+               border:1px solid var(--line); border-radius:var(--r); cursor:pointer; color:var(--ink); overflow:hidden; }
+  .row .open:hover { border-color:var(--line-strong); background:var(--subtle); }
+  .row .s { font-family:var(--mono); font-weight:600; flex:none; }
+  .row .d { color:var(--muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .del { flex:none; width:44px; border:1px solid var(--line); border-radius:var(--r); background:var(--surface);
+         color:var(--muted); cursor:pointer; font-size:16px; }
+  .del:hover { color:var(--ink); border-color:var(--line-strong); }
+
+  .editor { border-top:1px solid var(--line); padding-top:18px; }
+
+  /* result */
+  .result { margin-top:20px; border-top:1px solid var(--line); padding-top:16px; }
+  #qr { width:160px; height:160px; margin:10px auto 12px; background:#fff; padding:8px;
+        border:1px solid var(--line); border-radius:var(--r); }
+  #qr svg { width:100%; height:100%; display:block; }
+  .urlrow { display:flex; gap:8px; align-items:stretch; }
+  .urlrow code { flex:1; font-family:var(--mono); font-size:11px; word-break:break-all; color:var(--ink);
+                 background:var(--subtle); border:1px solid var(--line); border-radius:var(--r); padding:9px 11px; }
+  .urlrow .btn { width:auto; min-height:0; padding:0 16px; }
+
+  /* status / auth-waiting */
+  .status { color:var(--muted); font-size:12.5px; margin:12px 2px 0; min-height:16px; }
+  .codechip { display:inline-flex; align-items:center; gap:9px; margin-top:10px; padding:9px 14px;
+              background:var(--subtle); border:1px solid var(--line-strong); border-radius:var(--r);
+              font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:2px; cursor:pointer; color:var(--ink); }
+  .spin { width:15px; height:15px; border:2px solid var(--line-strong); border-top-color:var(--ink);
+          border-radius:50%; display:inline-block; vertical-align:-2px; margin-right:7px; animation:r .8s linear infinite; }
+  @keyframes r { to { transform:rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce){ .spin{ animation:none; } }
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <span class="logo">
+    <svg width="20" height="20" viewBox="0 0 128 128" aria-hidden="true">
+      <rect width="128" height="128" rx="28" fill="currentColor"/>
+      <g fill="none" stroke="var(--bg)" stroke-width="7.5" stroke-linecap="round">
+        <path d="M48.7 47.7 A22 22 0 0 1 48.7 80.3"/>
+        <path d="M58.1 37.3 A36 36 0 0 1 58.1 90.7"/>
+        <path d="M67.5 26.9 A50 50 0 0 1 67.5 101.1"/>
+      </g>
+      <circle cx="40" cy="64" r="7.5" fill="var(--bg)"/>
+    </svg>
+    tapto
+  </span>
+  <span id="acct" class="acct hide"><span id="who"></span><button id="signout" class="btn ghost" style="width:auto;min-height:30px;padding:0 12px;font-weight:500">Sign out</button></span>
+</div>
+
+<main>
+  <!-- signed out -->
+  <section id="auth">
+    <p class="lede">Create NFC &amp; QR tags you can repoint anytime — without rewriting the tag.</p>
+    <button id="signin" class="btn primary">Sign in with GitHub</button>
+    <button id="usePat" class="btn link">Use a personal token instead</button>
+    <div id="patBox" class="hide field" style="margin-top:14px">
+      <label for="pat">Token <span class="hint">— with “gist” scope</span></label>
+      <input id="pat" type="password" placeholder="ghp_… / github_pat_…" autocomplete="off" />
+      <p class="status" style="margin-top:8px"><a id="mkToken" href="https://github.com/settings/tokens/new?scopes=gist&amp;description=tapto" target="_blank" rel="noopener">Create one on GitHub →</a> (pre-set to “gist”)</p>
+      <button id="patSave" class="btn ghost" style="margin-top:6px">Save token</button>
+    </div>
+    <div id="authStatus" class="status hide" role="status" aria-live="polite"></div>
+  </section>
+
+  <!-- signed in -->
+  <section id="app" class="hide">
+    <h2>Your tags</h2>
+    <ul id="list" class="list"></ul>
+
+    <div class="editor">
+      <h2 id="formTitle">New tag</h2>
+      <div class="field">
+        <label for="slug">Slug <span class="hint">— the bit after #</span></label>
+        <input id="slug" placeholder="desk" autocomplete="off" autocapitalize="off" spellcheck="false" />
+        <p class="preview" id="preview">neves.cloud/tapto/#<b>…</b></p>
+      </div>
+      <div class="field">
+        <label>What happens</label>
+        <div class="seg" role="group" aria-label="Tag type">
+          <button type="button" id="tRedirect" aria-pressed="true">Open a link</button>
+          <button type="button" id="tPage" aria-pressed="false">Show a note</button>
+        </div>
+      </div>
+      <div id="redirectFields" class="field">
+        <label for="dest">Link</label>
+        <input id="dest" placeholder="https://…   tel:   mailto:   geo:" autocomplete="off" />
+      </div>
+      <div id="pageFields" class="field hide">
+        <label for="title">Title</label>
+        <input id="title" placeholder="Guest Wi-Fi" autocomplete="off" />
+        <label for="pbody" style="margin-top:10px">Text</label>
+        <textarea id="pbody" placeholder="Network: …&#10;Password: …"></textarea>
+      </div>
+      <div class="actions">
+        <button id="newTag" class="btn ghost hide">New</button>
+        <button id="save" class="btn primary">Save tag</button>
+      </div>
+      <p id="msg" class="status" role="status" aria-live="polite"></p>
+    </div>
+
+    <div id="result" class="result hide">
+      <p class="status" style="margin:0 0 2px">Write this to your NFC tag, or print the QR.</p>
+      <div id="qr" aria-label="QR code for this tag"></div>
+      <div class="urlrow"><code id="url"></code><button id="copy" class="btn ghost">Copy</button></div>
+    </div>
+  </section>
+</main>
+
+<script src="vendor/qrcode.js"></script>
+<script type="module" src="sidepanel.js"></script>
+</body>
+</html>

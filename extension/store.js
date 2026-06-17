@@ -14,7 +14,7 @@ export const CONFIG = {
   // client id here. (OAuth-app creation is web-only, like the org.) Until then the
   // PAT path works. Reusing opal's id would make users see "Authorize opal" — make a
   // `tapto` one for clean identity.
-  CLIENT_ID: 'REPLACE_WITH_TAPTO_OAUTH_CLIENT_ID',
+  CLIENT_ID: 'Ov23lidEGTvQzB8Fn0bk',
   SCOPE: 'gist',
   GIST_FILE: 'tapto.json',
   RESOLVER_BASE: 'https://neves.cloud/tapto/',  // origin baked into every tag — fixed before writing tags
@@ -47,7 +47,7 @@ export async function signInWithPAT(token) {
 
 // GitHub OAuth Device Flow, proxy-free (adapted from opal/docs/device-auth.js — the
 // only change is BASE = github.com directly, legal here via host_permissions).
-// onUserCode({user_code, verification_uri}) is called once so the popup can show the
+// onUserCode({user_code, verification_uri}) is called once so the caller can show the
 // code while we poll. Resolves the username.
 export async function connectDevice(onUserCode) {
   if (CONFIG.CLIENT_ID.startsWith('REPLACE')) throw new Error('Set CONFIG.CLIENT_ID first (or use the paste-token option).');
@@ -57,7 +57,9 @@ export async function connectDevice(onUserCode) {
   });
   const cd = await cdr.json();
   if (cd.error) throw new Error(cd.error_description || cd.error);
-  onUserCode?.({ user_code: cd.user_code, verification_uri: cd.verification_uri || `${GH}/login/device` });
+  onUserCode?.({ user_code: cd.user_code,
+    verification_uri: cd.verification_uri || `${GH}/login/device`,
+    verification_uri_complete: cd.verification_uri_complete }); // _complete pre-fills the code
 
   let intervalMs = ((cd.interval || 5) + 1) * 1000;
   const deadline = Date.now() + (cd.expires_in || 900) * 1000;

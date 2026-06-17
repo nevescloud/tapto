@@ -39,9 +39,11 @@ tap / scan ─▶ neves.cloud/tapto/#<slug> ─▶ look up <slug> in the tag map
 
 1. Load `extension/` as an unpacked extension (`chrome://extensions` → Developer
    mode → Load unpacked), or install the published build.
-2. Sign in (GitHub) and add a slug + destination. Save writes the tag map to your
-   gist and shows the URL + QR.
-3. Write the URL to an NFC tag (NFC Tools / a Shortcut on iPhone, or a USB writer),
+2. Click the tapto toolbar icon to open the side panel, then sign in — GitHub
+   opens in a tab beside the panel to authorize.
+3. Add a slug + destination. Save writes the tag map to your gist and shows the
+   URL + QR; the panel also lists your tags to edit or delete.
+4. Write the URL to an NFC tag (NFC Tools / a Shortcut on iPhone, or a USB writer),
    or print the QR.
 
 ## Self-hosting
