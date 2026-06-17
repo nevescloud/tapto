@@ -11,7 +11,16 @@ slug, so the printed code is dynamic too.
 ## How it works
 
 ```
-tap / scan ─▶ neves.cloud/tapto/#<gist-id>/<slug> ─▶ look up <slug> in the tag map ─▶ redirect or render
+tap / scan
+   │
+   ▼
+neves.cloud/tapto/#<gist-id>/<slug>
+   │
+   ▼
+look up <slug> in the tag map
+   │
+   ├──▶ redirect   (off to the destination URL)
+   └──▶ render     (page shown in place)
 ```
 
 - **Resolver** (`index.html`) — a static page. The `#slug` fragment never leaves the

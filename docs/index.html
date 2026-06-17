@@ -111,6 +111,33 @@ async function loadTags(gistId) {
 const msg = (title, detail) => { say(title);
   app.innerHTML = `<div><h1>${esc(title)}</h1><p class="muted">${esc(detail||'')}</p></div>`; };
 
+// http(s) → replace the tab (the page becomes the destination, no leftover tab).
+// Any other scheme (spotify:, tel:, app deep link) → a user-tapped Open: a gesture
+// softens iOS's app-launch prompt, and since a user-opened tab can't be closed by
+// script we attempt window.close() then leave a tidy "you can close this" state.
+function openUrl(url) {
+  if (/^https?:/i.test(url)) {
+    say('Redirecting…');
+    app.innerHTML = `<div><div class="spin" aria-hidden="true"></div>
+      <p class="muted" style="margin-top:14px">Taking you to <a href="${esc(url)}">${esc(url)}</a>…</p></div>`;
+    location.replace(url);
+    return;
+  }
+  say('Ready to open');
+  app.innerHTML = `<div>
+    <button id="open" style="font:inherit;font-weight:600;padding:13px 26px;border-radius:11px;
+      border:1px solid var(--ink);background:var(--ink);color:var(--bg);cursor:pointer">Open →</button>
+    <p class="muted" style="margin-top:14px;word-break:break-all">${esc(url)}</p></div>`;
+  document.getElementById('open').onclick = () => {
+    location.href = url;            // fire the app (iOS may still confirm)
+    say('Opening…');
+    setTimeout(() => {
+      try { window.close(); } catch {}   // best-effort; ignored for user-opened tabs
+      app.innerHTML = `<div><h1>Opening…</h1><p class="muted">You can close this tab.</p></div>`;
+    }, 600);
+  };
+}
+
 async function resolve() {
   const h = parseHash();
   if (!h) { document.documentElement.classList.remove('resolving'); return; } // → landing
@@ -123,10 +150,7 @@ async function resolve() {
   if (!tag) return msg('Unknown tag', `No destination set for “${h.slug}”.`);
   if (tag.type === 'page') { say(tag.title || 'Page');
     app.innerHTML = `<div>${tag.title?`<h1>${esc(tag.title)}</h1>`:''}<div class="body">${esc(tag.body||'')}</div></div>`; return; }
-  if (tag.url) { say('Redirecting…');
-    app.innerHTML = `<div><div class="spin" aria-hidden="true"></div>
-      <p class="muted" style="margin-top:14px">Taking you to <a href="${esc(tag.url)}">${esc(tag.url)}</a>…</p></div>`;
-    location.replace(tag.url); return; } // replace() → no back-button pollution
+  if (tag.url) return openUrl(tag.url);
   msg('Misconfigured tag', `“${h.slug}” has no url or page body.`);
 }
 addEventListener('hashchange', resolve);
