@@ -3,117 +3,236 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>tapto</title>
-<meta name="color-scheme" content="dark" />
+<title>tapto — reprogrammable NFC &amp; QR tags</title>
+<meta name="description" content="Turn a cheap NFC tag or printed QR into a link you control. The tag never changes — you edit where it points." />
+<meta name="color-scheme" content="light dark" />
+<!-- Anti-flash: on a real tag tap (#slug present) hide the landing before first paint;
+     the resolver is the hot path and must never flash marketing. -->
+<script>if (location.hash.length > 1) document.documentElement.classList.add('resolving');</script>
 <style>
-  :root { color-scheme: dark; }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; }
-  body {
-    background: #0b0d0f; color: #e6e8ea;
-    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-    display: grid; place-items: center; padding: 24px; text-align: center;
-    -webkit-text-size-adjust: 100%;
+  :root {
+    --bg:#f7f4ef; --ink:#1b1a17; --muted:#6c6860; --line:#e6e0d5;
+    --card:#fcfaf6; --accent:#c2603f; --accent-ink:#a64e30; --code:#efe9dd;
+    --serif:'Iowan Old Style','Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
   }
-  main { max-width: 34rem; width: 100%; }
-  .spin { width: 28px; height: 28px; border: 3px solid #2a2f35; border-top-color: #6ea8fe;
-          border-radius: 50%; animation: r .8s linear infinite; margin: 0 auto; }
-  @keyframes r { to { transform: rotate(360deg); } }
-  @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
-  h1 { font-size: 1.25rem; margin: 0 0 .25rem; }
-  a { color: #6ea8fe; }
-  .muted { color: #8b949e; font-size: .9rem; }
-  .body { white-space: pre-wrap; text-align: left; background: #12151a; border: 1px solid #222831;
-          border-radius: 12px; padding: 16px 18px; margin-top: 14px; }
-  code { background: #12151a; padding: .15em .4em; border-radius: 6px; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#16140f; --ink:#ece7dc; --muted:#9a9286; --line:#2c2820;
+            --card:#1d1a14; --accent:#e08a68; --accent-ink:#eea183; --code:#241f17; }
+  }
+  * { box-sizing:border-box; }
+  html.resolving #landing { display:none; }
+  html:not(.resolving) #app { display:none; }
+  html,body { margin:0; }
+  body { background:var(--bg); color:var(--ink); font-family:var(--sans);
+         font-size:17px; line-height:1.6; -webkit-text-size-adjust:100%; -webkit-font-smoothing:antialiased; }
+  a { color:var(--accent-ink); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  .wrap { max-width:60rem; margin:0 auto; padding:0 24px; }
+  code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.92em;
+         background:var(--code); padding:.12em .4em; border-radius:6px; }
+
+  nav { display:flex; align-items:center; justify-content:space-between; padding:22px 0; }
+  .brand { font-family:var(--serif); font-size:1.35rem; font-weight:600; letter-spacing:-.01em; color:var(--ink); }
+  .brand .dot { color:var(--accent); }
+  nav .links a { color:var(--muted); margin-left:22px; font-size:.95rem; }
+  nav .links a:hover { color:var(--ink); }
+
+  header.hero { padding:72px 0 28px; max-width:44rem; }
+  .eyebrow { text-transform:uppercase; letter-spacing:.14em; font-size:.74rem; font-weight:600;
+             color:var(--accent-ink); margin-bottom:20px; }
+  h1 { font-family:var(--serif); font-weight:600; letter-spacing:-.02em; line-height:1.08;
+       font-size:clamp(2.4rem,6vw,3.9rem); margin:0 0 22px; }
+  .lede { font-size:1.22rem; color:var(--muted); margin:0 0 34px; max-width:34rem; }
+  .cta { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+  .btn { display:inline-flex; align-items:center; gap:9px; font-size:1rem; font-weight:500;
+         padding:13px 22px; border-radius:11px; border:1px solid transparent; cursor:pointer; }
+  .btn-primary { background:var(--accent); color:#fff; }
+  .btn-primary:hover { background:var(--accent-ink); text-decoration:none; }
+  .btn-ghost { border-color:var(--line); color:var(--ink); }
+  .btn-ghost:hover { border-color:var(--muted); text-decoration:none; }
+  .hint { font-size:.85rem; color:var(--muted); }
+
+  .demo { margin:46px 0 8px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .chip { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.92rem;
+          background:var(--card); border:1px solid var(--line); border-radius:999px;
+          padding:10px 18px; color:var(--ink); }
+  .chip b { color:var(--accent-ink); font-weight:600; }
+
+  section { padding:60px 0; border-top:1px solid var(--line); }
+  .kicker { font-family:var(--serif); font-size:1.7rem; font-weight:600; letter-spacing:-.01em; margin:0 0 8px; }
+  .sub { color:var(--muted); margin:0 0 40px; max-width:38rem; }
+  .steps { display:grid; gap:28px; grid-template-columns:repeat(3,1fr); }
+  .step .n { font-family:var(--serif); font-size:1.1rem; color:var(--accent); margin-bottom:10px; }
+  .step h3 { font-size:1.02rem; margin:0 0 6px; }
+  .step p { color:var(--muted); font-size:.96rem; margin:0; }
+  .feat { display:grid; gap:24px; grid-template-columns:repeat(3,1fr); }
+  .feat .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px; }
+  .feat h3 { font-size:1rem; margin:0 0 7px; }
+  .feat p { color:var(--muted); font-size:.94rem; margin:0; }
+  @media (max-width:720px){ .steps,.feat{ grid-template-columns:1fr; } header.hero{ padding-top:48px; } }
+
+  .install { text-align:center; }
+  .install .kicker { font-size:2rem; }
+  .stores { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:24px; }
+  .badge { position:relative; }
+  .badge::after { content:"soon"; position:absolute; top:-7px; right:-7px; font-size:.6rem;
+                  text-transform:uppercase; letter-spacing:.06em; background:var(--accent); color:#fff;
+                  padding:2px 6px; border-radius:6px; }
+
+  footer { border-top:1px solid var(--line); padding:34px 0 56px; color:var(--muted); font-size:.9rem;
+           display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+
+  #app { min-height:100vh; display:grid; place-items:center; text-align:center; padding:24px; }
+  .spin { width:28px; height:28px; border:3px solid var(--line); border-top-color:var(--accent);
+          border-radius:50%; animation:r .8s linear infinite; margin:0 auto; }
+  @keyframes r { to { transform:rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce){ .spin{ animation:none; } }
+  #app .body { white-space:pre-wrap; text-align:left; background:var(--card); border:1px solid var(--line);
+               border-radius:12px; padding:16px 18px; margin-top:14px; max-width:34rem; }
+  #app h1 { font-size:1.5rem; }
+  .muted { color:var(--muted); }
 </style>
 </head>
 <body>
-<main id="app">
-  <div class="spin" aria-hidden="true"></div>
-</main>
-<!-- Single live region: every state change is announced for AT (web-conformance). -->
+
+<!-- ───────────────────────── landing (no-hash) ───────────────────────── -->
+<div id="landing">
+  <div class="wrap">
+    <nav>
+      <span class="brand">tapto<span class="dot">.</span></span>
+      <span class="links">
+        <a href="#how">How it works</a>
+        <a href="#get">Get the app</a>
+        <a href="https://github.com/nevescloud/tapto">GitHub</a>
+      </span>
+    </nav>
+
+    <header class="hero">
+      <p class="eyebrow">NFC &amp; QR</p>
+      <h1>One tap. Any destination. Changed anytime.</h1>
+      <p class="lede">tapto turns a cheap NFC tag or a printed QR into a link you control.
+        The tag never changes — you edit where it points.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="#get">Get the creator
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/nevescloud/tapto">View source</a>
+      </div>
+
+      <div class="demo">
+        <span class="chip">neves.cloud/tapto/<b>#desk</b></span>
+        <span class="hint">→ <a href="#desk">tap it</a> — points wherever you set it</span>
+      </div>
+    </header>
+  </div>
+
+  <section id="how">
+    <div class="wrap">
+      <p class="kicker">How it works</p>
+      <p class="sub">The tag carries a short, stable slug URL. Where that slug goes lives in
+        editable config — so you reprogram the tag without ever rewriting it.</p>
+      <div class="steps">
+        <div class="step"><div class="n">01</div><h3>Write a slug</h3>
+          <p>Put <code>neves.cloud/tapto/#desk</code> on an NFC tag or print it as a QR. Once.</p></div>
+        <div class="step"><div class="n">02</div><h3>Point it anywhere</h3>
+          <p>A link, a phone number, Wi-Fi details, a note rendered in place — any scheme.</p></div>
+        <div class="step"><div class="n">03</div><h3>Change it anytime</h3>
+          <p>Edit the destination from the creator. The tag in the wild stays exactly the same.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="feat">
+        <div class="card"><h3>Reprogrammable</h3>
+          <p>Repoint a tag by editing config, never by re-writing the tag. Print once, change forever.</p></div>
+        <div class="card"><h3>Any carrier</h3>
+          <p>NFC, QR, or a plain link — the same slug works everywhere. A tapto QR is dynamic, not baked.</p></div>
+        <div class="card"><h3>Yours</h3>
+          <p>Runs on your own domain, your data in your GitHub. No middleman, no lock-in.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="get" class="install">
+    <div class="wrap">
+      <p class="kicker">Create tags in your browser</p>
+      <p class="sub" style="margin-inline:auto">Install the creator extension to add and edit tags and get
+        the URL&nbsp;+&nbsp;QR for each one. Editing is the only part that signs in — the tags themselves are public.</p>
+      <div class="stores">
+        <a class="btn btn-primary badge" href="#" aria-disabled="true">Add to Chrome</a>
+        <a class="btn btn-ghost badge" href="#" aria-disabled="true">Add to Firefox</a>
+      </div>
+      <p class="hint" style="margin-top:18px">Store links coming soon · or load <code>extension/</code> unpacked from
+        <a href="https://github.com/nevescloud/tapto">the repo</a>.</p>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <footer>
+      <span>tapto · <a href="https://neves.cloud">neves.cloud</a></span>
+      <span><a href="https://github.com/nevescloud/tapto">github.com/nevescloud/tapto</a></span>
+    </footer>
+  </div>
+</div>
+
+<!-- ───────────────────────── resolver (#slug) ───────────────────────── -->
+<main id="app"><div class="spin" aria-hidden="true"></div></main>
 <p role="status" aria-live="polite" id="sr" class="muted" style="position:absolute;left:-9999px">Loading…</p>
 
 <script type="module">
-// ── tapto resolver ────────────────────────────────────────────────────────
-// A static page. The tag bakes  https://neves.cloud/tapto/#<slug>  (fragment, so
-// it never hits a server → one file routes every tag, no per-tag files / 404 hack).
-// Config lives in a public gist the owner edits via the creator extension; this
-// page only READS it (unauthenticated, api.github.com is CORS-clean). Editing is
-// the only thing that ever authenticates — never the tap path.
-//
-// Multi-user later: slug grammar becomes  #u/<user>/<slug>  and OWNER is read from
-// the path instead of the constant. Storage layer is unchanged.
-const OWNER     = 'jonasneves';     // whose gist holds the tag map (POC: single owner)
-const GIST_FILE = 'tapto.json';     // the file within that gist
-const LOCAL_FALLBACK = 'tags.json'; // committed copy, used if the gist read fails
+// On a #slug, resolve through the owner's public tag map (a gist). Bare URL → the
+// landing above stays shown. This page only READS; editing happens in the creator.
+const OWNER = 'jonasneves', GIST_FILE = 'tapto.json', LOCAL_FALLBACK = 'tags.json';
 
 const app = document.getElementById('app');
 const sr  = document.getElementById('sr');
 const say = (m) => { sr.textContent = m; };
+const esc = (s) => String(s).replace(/[&<>"']/g, c =>
+  ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 
-function esc(s) { return String(s).replace(/[&<>"']/g, c =>
-  ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+const slugFromHash = () =>
+  decodeURIComponent(location.hash.replace(/^#/, '').split('?')[0]).trim().replace(/^\/+|\/+$/g, '');
 
-function slugFromHash() {
-  // strip leading '#', tolerate a stray '?' some readers append, decode.
-  let h = decodeURIComponent(location.hash.replace(/^#/, '').split('?')[0]).trim();
-  return h.replace(/^\/+|\/+$/g, '');
-}
-
-// Find the owner's tapto gist and return its parsed JSON. One list call returns
-// the raw_url, so it's at most two requests; falls back to the committed file.
 async function loadTags() {
   try {
     const r = await fetch(`https://api.github.com/users/${OWNER}/gists?per_page=100`,
       { headers: { Accept: 'application/vnd.github+json' } });
     if (r.ok) {
       const g = (await r.json()).find(g => g.files && g.files[GIST_FILE]);
-      if (g) {
-        const raw = await fetch(g.files[GIST_FILE].raw_url);
-        if (raw.ok) return await raw.json();
-      }
+      if (g) { const raw = await fetch(g.files[GIST_FILE].raw_url); if (raw.ok) return await raw.json(); }
     }
-  } catch { /* fall through to local */ }
+  } catch { /* fall through */ }
   const lr = await fetch(LOCAL_FALLBACK, { cache: 'no-store' });
-  if (!lr.ok) throw new Error('No tag source reachable.');
+  if (!lr.ok) throw new Error('no source');
   return await lr.json();
 }
 
-function renderRedirect(url) {
-  say('Redirecting…');
-  app.innerHTML = `<div class="spin" aria-hidden="true"></div>
-    <p class="muted" style="margin-top:14px">Taking you to <a href="${esc(url)}">${esc(url)}</a>…</p>`;
-  location.replace(url); // replace() so the hop doesn't pollute back-button history
-}
+const msg = (title, detail) => { say(title);
+  app.innerHTML = `<div><h1>${esc(title)}</h1><p class="muted">${esc(detail||'')}</p></div>`; };
 
-function renderPage(tag) {
-  say(tag.title || 'Page');
-  app.innerHTML = `${tag.title ? `<h1>${esc(tag.title)}</h1>` : ''}
-    <div class="body">${esc(tag.body || '')}</div>`;
-}
-
-function renderMessage(title, detail) {
-  say(title);
-  app.innerHTML = `<h1>${esc(title)}</h1><p class="muted">${esc(detail || '')}</p>`;
-}
-
-async function main() {
+async function resolve() {
   const slug = slugFromHash();
-  if (!slug) return renderMessage('tapto', 'Tap a tag, or append #your-slug to this URL.');
+  if (!slug) { document.documentElement.classList.remove('resolving'); return; } // → landing
+  document.documentElement.classList.add('resolving');
   let tags;
-  try { tags = await loadTags(); }
-  catch { return renderMessage('Can’t reach tags', 'The tag source is unavailable. Try again.'); }
+  try { tags = await loadTags(); } catch { return msg('Can’t reach tags', 'Try again in a moment.'); }
   const tag = (tags.tags || tags)[slug];
-  if (!tag) return renderMessage('Unknown tag', `No destination set for “${slug}”.`);
-  if (tag.type === 'page') return renderPage(tag);
-  if (tag.url) return renderRedirect(tag.url); // default/'redirect'
-  renderMessage('Misconfigured tag', `“${slug}” has no url or page body.`);
+  if (!tag) return msg('Unknown tag', `No destination set for “${slug}”.`);
+  if (tag.type === 'page') { say(tag.title || 'Page');
+    app.innerHTML = `<div>${tag.title?`<h1>${esc(tag.title)}</h1>`:''}<div class="body">${esc(tag.body||'')}</div></div>`;
+    return; }
+  if (tag.url) { say('Redirecting…');
+    app.innerHTML = `<div><div class="spin" aria-hidden="true"></div>
+      <p class="muted" style="margin-top:14px">Taking you to <a href="${esc(tag.url)}">${esc(tag.url)}</a>…</p></div>`;
+    location.replace(tag.url); return; } // replace() → no back-button pollution
+  msg('Misconfigured tag', `“${slug}” has no url or page body.`);
 }
 
-addEventListener('hashchange', main);
-main();
+addEventListener('hashchange', resolve);
+resolve();
 </script>
 </body>
 </html>
