@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>tapto</title>
+<meta name="color-scheme" content="dark" />
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: #0b0d0f; color: #e6e8ea;
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    display: grid; place-items: center; padding: 24px; text-align: center;
+    -webkit-text-size-adjust: 100%;
+  }
+  main { max-width: 34rem; width: 100%; }
+  .spin { width: 28px; height: 28px; border: 3px solid #2a2f35; border-top-color: #6ea8fe;
+          border-radius: 50%; animation: r .8s linear infinite; margin: 0 auto; }
+  @keyframes r { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+  h1 { font-size: 1.25rem; margin: 0 0 .25rem; }
+  a { color: #6ea8fe; }
+  .muted { color: #8b949e; font-size: .9rem; }
+  .body { white-space: pre-wrap; text-align: left; background: #12151a; border: 1px solid #222831;
+          border-radius: 12px; padding: 16px 18px; margin-top: 14px; }
+  code { background: #12151a; padding: .15em .4em; border-radius: 6px; }
+</style>
+</head>
+<body>
+<main id="app">
+  <div class="spin" aria-hidden="true"></div>
+</main>
+<!-- Single live region: every state change is announced for AT (web-conformance). -->
+<p role="status" aria-live="polite" id="sr" class="muted" style="position:absolute;left:-9999px">Loading…</p>
+
+<script type="module">
+// ── tapto resolver ────────────────────────────────────────────────────────
+// A static page. The tag bakes  https://neves.cloud/tapto/#<slug>  (fragment, so
+// it never hits a server → one file routes every tag, no per-tag files / 404 hack).
+// Config lives in a public gist the owner edits via the creator extension; this
+// page only READS it (unauthenticated, api.github.com is CORS-clean). Editing is
+// the only thing that ever authenticates — never the tap path.
+//
+// Multi-user later: slug grammar becomes  #u/<user>/<slug>  and OWNER is read from
+// the path instead of the constant. Storage layer is unchanged.
+const OWNER     = 'jonasneves';     // whose gist holds the tag map (POC: single owner)
+const GIST_FILE = 'tapto.json';     // the file within that gist
+const LOCAL_FALLBACK = 'tags.json'; // committed copy, used if the gist read fails
+
+const app = document.getElementById('app');
+const sr  = document.getElementById('sr');
+const say = (m) => { sr.textContent = m; };
+
+function esc(s) { return String(s).replace(/[&<>"']/g, c =>
+  ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+function slugFromHash() {
+  // strip leading '#', tolerate a stray '?' some readers append, decode.
+  let h = decodeURIComponent(location.hash.replace(/^#/, '').split('?')[0]).trim();
+  return h.replace(/^\/+|\/+$/g, '');
+}
+
+// Find the owner's tapto gist and return its parsed JSON. One list call returns
+// the raw_url, so it's at most two requests; falls back to the committed file.
+async function loadTags() {
+  try {
+    const r = await fetch(`https://api.github.com/users/${OWNER}/gists?per_page=100`,
+      { headers: { Accept: 'application/vnd.github+json' } });
+    if (r.ok) {
+      const g = (await r.json()).find(g => g.files && g.files[GIST_FILE]);
+      if (g) {
+        const raw = await fetch(g.files[GIST_FILE].raw_url);
+        if (raw.ok) return await raw.json();
+      }
+    }
+  } catch { /* fall through to local */ }
+  const lr = await fetch(LOCAL_FALLBACK, { cache: 'no-store' });
+  if (!lr.ok) throw new Error('No tag source reachable.');
+  return await lr.json();
+}
+
+function renderRedirect(url) {
+  say('Redirecting…');
+  app.innerHTML = `<div class="spin" aria-hidden="true"></div>
+    <p class="muted" style="margin-top:14px">Taking you to <a href="${esc(url)}">${esc(url)}</a>…</p>`;
+  location.replace(url); // replace() so the hop doesn't pollute back-button history
+}
+
+function renderPage(tag) {
+  say(tag.title || 'Page');
+  app.innerHTML = `${tag.title ? `<h1>${esc(tag.title)}</h1>` : ''}
+    <div class="body">${esc(tag.body || '')}</div>`;
+}
+
+function renderMessage(title, detail) {
+  say(title);
+  app.innerHTML = `<h1>${esc(title)}</h1><p class="muted">${esc(detail || '')}</p>`;
+}
+
+async function main() {
+  const slug = slugFromHash();
+  if (!slug) return renderMessage('tapto', 'Tap a tag, or append #your-slug to this URL.');
+  let tags;
+  try { tags = await loadTags(); }
+  catch { return renderMessage('Can’t reach tags', 'The tag source is unavailable. Try again.'); }
+  const tag = (tags.tags || tags)[slug];
+  if (!tag) return renderMessage('Unknown tag', `No destination set for “${slug}”.`);
+  if (tag.type === 'page') return renderPage(tag);
+  if (tag.url) return renderRedirect(tag.url); // default/'redirect'
+  renderMessage('Misconfigured tag', `“${slug}” has no url or page body.`);
+}
+
+addEventListener('hashchange', main);
+main();
+</script>
+</body>
+</html>

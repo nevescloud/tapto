@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "tags": {
+    "hello": { "type": "redirect", "url": "https://github.com/jonasneves" },
+    "wifi":  { "type": "page", "title": "Guest Wi-Fi", "body": "Network:  example-guest\nPassword: change-me" }
+  }
+}

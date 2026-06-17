@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  :root { color-scheme: dark; }
+  body { width: 320px; margin: 0; padding: 14px;
+         background: #0b0d0f; color: #e6e8ea;
+         font: 13px/1.45 -apple-system, system-ui, sans-serif; }
+  h1 { font-size: 13px; margin: 0 0 10px; display: flex; justify-content: space-between; align-items: center; }
+  .who { color: #8b949e; font-weight: 400; }
+  label { display: block; margin: 8px 0 3px; color: #8b949e; }
+  input, textarea, select, button { width: 100%; box-sizing: border-box; font: inherit;
+    background: #12151a; color: #e6e8ea; border: 1px solid #222831; border-radius: 8px; padding: 7px 9px; }
+  textarea { resize: vertical; min-height: 44px; }
+  button { background: #1f6feb; border-color: #1f6feb; color: #fff; cursor: pointer; margin-top: 10px; }
+  button.secondary { background: transparent; border-color: #222831; color: #6ea8fe; }
+  button:disabled { opacity: .5; cursor: default; }
+  .row { display: flex; gap: 6px; }
+  .row > * { flex: 1; }
+  #qr { margin: 10px auto 0; width: 160px; height: 160px; display: none; }
+  #qr svg { width: 100%; height: 100%; }
+  #url { font-size: 11px; word-break: break-all; color: #6ea8fe; text-align: center; margin-top: 6px; }
+  .hide { display: none !important; }
+  #msg { min-height: 16px; margin-top: 8px; color: #8b949e; }
+  a { color: #6ea8fe; }
+</style>
+</head>
+<body>
+  <h1>tapto <span class="who" id="who"></span></h1>
+
+  <!-- signed-out -->
+  <section id="auth">
+    <button id="signin">Sign in with GitHub</button>
+    <button id="usePat" class="secondary">Paste a token instead</button>
+    <div id="patBox" class="hide">
+      <label for="pat">Fine-grained token (gist scope)</label>
+      <input id="pat" type="password" placeholder="github_pat_…" autocomplete="off" />
+      <button id="patSave" class="secondary">Save token</button>
+      <p id="msg2" style="color:#8b949e"></p>
+    </div>
+  </section>
+
+  <!-- signed-in: editor -->
+  <section id="editor" class="hide">
+    <label for="slug">Slug</label>
+    <input id="slug" placeholder="desk" autocomplete="off" />
+    <label for="type">Type</label>
+    <select id="type">
+      <option value="redirect">Redirect → URL</option>
+      <option value="page">Page (rendered text)</option>
+    </select>
+    <div id="redirectFields">
+      <label for="dest">Destination URL</label>
+      <input id="dest" placeholder="https://… (or tel:, mailto:, geo:, spotify:…)" autocomplete="off" />
+    </div>
+    <div id="pageFields" class="hide">
+      <label for="title">Title</label>
+      <input id="title" placeholder="Guest Wi-Fi" autocomplete="off" />
+      <label for="pbody">Body</label>
+      <textarea id="pbody" placeholder="Network: …&#10;Password: …"></textarea>
+    </div>
+    <button id="save">Save tag</button>
+    <div class="row">
+      <button id="signout" class="secondary">Sign out</button>
+    </div>
+    <p id="msg" role="status" aria-live="polite"></p>
+    <div id="qr" aria-label="QR code for this tag"></div>
+    <div id="url"></div>
+  </section>
+
+  <script src="vendor/qrcode.js"></script>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

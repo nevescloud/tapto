@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "tapto — creator",
+  "version": "0.1.0",
+  "description": "Create and edit NFC/QR tags that resolve through neves.cloud/tapto. Writes your tag map to a GitHub gist.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://github.com/login/*",
+    "https://api.github.com/*"
+  ],
+  "action": { "default_title": "tapto", "default_popup": "popup.html" }
+}
