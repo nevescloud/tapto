@@ -4,202 +4,88 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>tapto — reprogrammable NFC &amp; QR tags</title>
-<meta name="description" content="Turn a cheap NFC tag or printed QR into a link you control. The tag never changes — you edit where it points." />
+<meta name="description" content="One tag, any destination, change it anytime — without rewriting the tag." />
 <meta name="color-scheme" content="light dark" />
-<!-- Anti-flash: on a real tag tap (#slug present) hide the landing before first paint;
-     the resolver is the hot path and must never flash marketing. -->
+<!-- Anti-flash: on a real tag tap (#slug) hide the landing before first paint. -->
 <script>if (location.hash.length > 1) document.documentElement.classList.add('resolving');</script>
 <style>
-  :root {
-    --bg:#f7f4ef; --ink:#1b1a17; --muted:#6c6860; --line:#e6e0d5;
-    --card:#fcfaf6; --accent:#c2603f; --accent-ink:#a64e30; --code:#efe9dd;
-    --serif:'Iowan Old Style','Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif;
-    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
-  }
+  :root { --bg:#fbfbfa; --ink:#15140f; --muted:#6a685f; --line:#e7e5df; --card:#fff; }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#16140f; --ink:#ece7dc; --muted:#9a9286; --line:#2c2820;
-            --card:#1d1a14; --accent:#e08a68; --accent-ink:#eea183; --code:#241f17; }
+    :root { --bg:#0d0d0c; --ink:#ededea; --muted:#8a877e; --line:#262521; --card:#161614; }
   }
   * { box-sizing:border-box; }
   html.resolving #landing { display:none; }
   html:not(.resolving) #app { display:none; }
-  html,body { margin:0; }
-  body { background:var(--bg); color:var(--ink); font-family:var(--sans);
-         font-size:17px; line-height:1.6; -webkit-text-size-adjust:100%; -webkit-font-smoothing:antialiased; }
-  a { color:var(--accent-ink); text-decoration:none; }
-  a:hover { text-decoration:underline; }
-  .wrap { max-width:60rem; margin:0 auto; padding:0 24px; }
-  code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.92em;
-         background:var(--code); padding:.12em .4em; border-radius:6px; }
+  html,body { margin:0; min-height:100%; }
+  body { background:var(--bg); color:var(--ink); font-size:16px; line-height:1.55;
+         font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+         -webkit-font-smoothing:antialiased; -webkit-text-size-adjust:100%; }
+  a { color:inherit; }
 
-  nav { display:flex; align-items:center; justify-content:space-between; padding:22px 0; }
-  .brand { font-family:var(--serif); font-size:1.35rem; font-weight:600; letter-spacing:-.01em; color:var(--ink); }
-  .brand .dot { color:var(--accent); }
-  nav .links a { color:var(--muted); margin-left:22px; font-size:.95rem; }
-  nav .links a:hover { color:var(--ink); }
-
-  header.hero { padding:72px 0 28px; max-width:44rem; }
-  .eyebrow { text-transform:uppercase; letter-spacing:.14em; font-size:.74rem; font-weight:600;
-             color:var(--accent-ink); margin-bottom:20px; }
-  h1 { font-family:var(--serif); font-weight:600; letter-spacing:-.02em; line-height:1.08;
-       font-size:clamp(2.4rem,6vw,3.9rem); margin:0 0 22px; }
-  .lede { font-size:1.22rem; color:var(--muted); margin:0 0 34px; max-width:34rem; }
-  .cta { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
-  .btn { display:inline-flex; align-items:center; gap:9px; font-size:1rem; font-weight:500;
-         padding:13px 22px; border-radius:11px; border:1px solid transparent; cursor:pointer; }
-  .btn-primary { background:var(--accent); color:#fff; }
-  .btn-primary:hover { background:var(--accent-ink); text-decoration:none; }
+  /* landing — one centered screen, no scroll */
+  #landing { min-height:100dvh; display:grid; place-items:center; padding:32px; }
+  .card { width:100%; max-width:25rem; text-align:center; }
+  .brand { font-size:1.5rem; font-weight:650; letter-spacing:-.02em; }
+  h1 { font-size:1.18rem; font-weight:600; letter-spacing:-.01em; margin:22px 0 8px; }
+  p.lede { color:var(--muted); margin:0 0 26px; }
+  .cta { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  .btn { display:inline-flex; align-items:center; gap:7px; font:inherit; font-weight:500;
+         padding:11px 18px; border-radius:10px; border:1px solid var(--ink); cursor:pointer; text-decoration:none; }
+  .btn-primary { background:var(--ink); color:var(--bg); }
+  .btn-primary:hover { opacity:.88; }
   .btn-ghost { border-color:var(--line); color:var(--ink); }
-  .btn-ghost:hover { border-color:var(--muted); text-decoration:none; }
-  .hint { font-size:.85rem; color:var(--muted); }
+  .btn-ghost:hover { border-color:var(--muted); }
+  .badge::after { content:"soon"; font-size:.6rem; text-transform:uppercase; letter-spacing:.05em;
+                  margin-left:2px; opacity:.6; }
+  .demo { margin-top:26px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.85rem; color:var(--muted); }
+  .demo b { color:var(--ink); }
+  .demo a { text-decoration:underline; text-underline-offset:2px; }
+  footer { margin-top:30px; font-size:.8rem; color:var(--muted); }
+  footer a { text-decoration:none; }
 
-  .demo { margin:46px 0 8px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
-  .chip { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.92rem;
-          background:var(--card); border:1px solid var(--line); border-radius:999px;
-          padding:10px 18px; color:var(--ink); }
-  .chip b { color:var(--accent-ink); font-weight:600; }
-
-  section { padding:60px 0; border-top:1px solid var(--line); }
-  .kicker { font-family:var(--serif); font-size:1.7rem; font-weight:600; letter-spacing:-.01em; margin:0 0 8px; }
-  .sub { color:var(--muted); margin:0 0 40px; max-width:38rem; }
-  .steps { display:grid; gap:28px; grid-template-columns:repeat(3,1fr); }
-  .step .n { font-family:var(--serif); font-size:1.1rem; color:var(--accent); margin-bottom:10px; }
-  .step h3 { font-size:1.02rem; margin:0 0 6px; }
-  .step p { color:var(--muted); font-size:.96rem; margin:0; }
-  .feat { display:grid; gap:24px; grid-template-columns:repeat(3,1fr); }
-  .feat .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px; }
-  .feat h3 { font-size:1rem; margin:0 0 7px; }
-  .feat p { color:var(--muted); font-size:.94rem; margin:0; }
-  @media (max-width:720px){ .steps,.feat{ grid-template-columns:1fr; } header.hero{ padding-top:48px; } }
-
-  .install { text-align:center; }
-  .install .kicker { font-size:2rem; }
-  .stores { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:24px; }
-  .badge { position:relative; }
-  .badge::after { content:"soon"; position:absolute; top:-7px; right:-7px; font-size:.6rem;
-                  text-transform:uppercase; letter-spacing:.06em; background:var(--accent); color:#fff;
-                  padding:2px 6px; border-radius:6px; }
-
-  footer { border-top:1px solid var(--line); padding:34px 0 56px; color:var(--muted); font-size:.9rem;
-           display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; }
-
-  #app { min-height:100vh; display:grid; place-items:center; text-align:center; padding:24px; }
-  .spin { width:28px; height:28px; border:3px solid var(--line); border-top-color:var(--accent);
+  /* resolver */
+  #app { min-height:100dvh; display:grid; place-items:center; text-align:center; padding:24px; }
+  .spin { width:26px; height:26px; border:3px solid var(--line); border-top-color:var(--ink);
           border-radius:50%; animation:r .8s linear infinite; margin:0 auto; }
   @keyframes r { to { transform:rotate(360deg); } }
   @media (prefers-reduced-motion: reduce){ .spin{ animation:none; } }
   #app .body { white-space:pre-wrap; text-align:left; background:var(--card); border:1px solid var(--line);
                border-radius:12px; padding:16px 18px; margin-top:14px; max-width:34rem; }
-  #app h1 { font-size:1.5rem; }
+  #app h1 { font-size:1.4rem; margin:0 0 .25rem; }
   .muted { color:var(--muted); }
 </style>
 </head>
 <body>
 
-<!-- ───────────────────────── landing (no-hash) ───────────────────────── -->
 <div id="landing">
-  <div class="wrap">
-    <nav>
-      <span class="brand">tapto<span class="dot">.</span></span>
-      <span class="links">
-        <a href="#how">How it works</a>
-        <a href="#get">Get the app</a>
-        <a href="https://github.com/nevescloud/tapto">GitHub</a>
-      </span>
-    </nav>
-
-    <header class="hero">
-      <p class="eyebrow">NFC &amp; QR</p>
-      <h1>One tap. Any destination. Changed anytime.</h1>
-      <p class="lede">tapto turns a cheap NFC tag or a printed QR into a link you control.
-        The tag never changes — you edit where it points.</p>
-      <div class="cta">
-        <a class="btn btn-primary" href="#get">Get the creator
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </a>
-        <a class="btn btn-ghost" href="https://github.com/nevescloud/tapto">View source</a>
-      </div>
-
-      <div class="demo">
-        <span class="chip">neves.cloud/tapto/<b>#desk</b></span>
-        <span class="hint">→ <a href="#desk">tap it</a> — points wherever you set it</span>
-      </div>
-    </header>
-  </div>
-
-  <section id="how">
-    <div class="wrap">
-      <p class="kicker">How it works</p>
-      <p class="sub">The tag carries a short, stable slug URL. Where that slug goes lives in
-        editable config — so you reprogram the tag without ever rewriting it.</p>
-      <div class="steps">
-        <div class="step"><div class="n">01</div><h3>Write a slug</h3>
-          <p>Put <code>neves.cloud/tapto/#desk</code> on an NFC tag or print it as a QR. Once.</p></div>
-        <div class="step"><div class="n">02</div><h3>Point it anywhere</h3>
-          <p>A link, a phone number, Wi-Fi details, a note rendered in place — any scheme.</p></div>
-        <div class="step"><div class="n">03</div><h3>Change it anytime</h3>
-          <p>Edit the destination from the creator. The tag in the wild stays exactly the same.</p></div>
-      </div>
+  <div class="card">
+    <div class="brand">tapto.</div>
+    <h1>Reprogrammable NFC &amp; QR tags.</h1>
+    <p class="lede">One tag, any destination — change where it points anytime, without rewriting the tag.</p>
+    <div class="cta">
+      <a class="btn btn-primary badge" href="#" aria-disabled="true">Get the creator</a>
+      <a class="btn btn-ghost" href="https://github.com/nevescloud/tapto">Source</a>
     </div>
-  </section>
-
-  <section>
-    <div class="wrap">
-      <div class="feat">
-        <div class="card"><h3>Reprogrammable</h3>
-          <p>Repoint a tag by editing config, never by re-writing the tag. Print once, change forever.</p></div>
-        <div class="card"><h3>Any carrier</h3>
-          <p>NFC, QR, or a plain link — the same slug works everywhere. A tapto QR is dynamic, not baked.</p></div>
-        <div class="card"><h3>Yours</h3>
-          <p>Runs on your own domain, your data in your GitHub. No middleman, no lock-in.</p></div>
-      </div>
-    </div>
-  </section>
-
-  <section id="get" class="install">
-    <div class="wrap">
-      <p class="kicker">Create tags in your browser</p>
-      <p class="sub" style="margin-inline:auto">Install the creator extension to add and edit tags and get
-        the URL&nbsp;+&nbsp;QR for each one. Editing is the only part that signs in — the tags themselves are public.</p>
-      <div class="stores">
-        <a class="btn btn-primary badge" href="#" aria-disabled="true">Add to Chrome</a>
-        <a class="btn btn-ghost badge" href="#" aria-disabled="true">Add to Firefox</a>
-      </div>
-      <p class="hint" style="margin-top:18px">Store links coming soon · or load <code>extension/</code> unpacked from
-        <a href="https://github.com/nevescloud/tapto">the repo</a>.</p>
-    </div>
-  </section>
-
-  <div class="wrap">
-    <footer>
-      <span>tapto · <a href="https://neves.cloud">neves.cloud</a></span>
-      <span><a href="https://github.com/nevescloud/tapto">github.com/nevescloud/tapto</a></span>
-    </footer>
+    <div class="demo">neves.cloud/tapto/<b>#desk</b> · <a href="#desk">tap it</a></div>
+    <footer><a href="https://neves.cloud">neves.cloud</a></footer>
   </div>
 </div>
 
-<!-- ───────────────────────── resolver (#slug) ───────────────────────── -->
 <main id="app"><div class="spin" aria-hidden="true"></div></main>
 <p role="status" aria-live="polite" id="sr" class="muted" style="position:absolute;left:-9999px">Loading…</p>
 
 <script type="module">
-// On a #slug, resolve through the owner's public tag map (a gist). Bare URL → the
-// landing above stays shown. This page only READS; editing happens in the creator.
+// On a #slug, resolve through the owner's public tag map (a gist). Bare URL → landing.
 const OWNER = 'jonasneves', GIST_FILE = 'tapto.json', LOCAL_FALLBACK = 'tags.json';
-
 const app = document.getElementById('app');
 const sr  = document.getElementById('sr');
 const say = (m) => { sr.textContent = m; };
-const esc = (s) => String(s).replace(/[&<>"']/g, c =>
-  ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-
-const slugFromHash = () =>
-  decodeURIComponent(location.hash.replace(/^#/, '').split('?')[0]).trim().replace(/^\/+|\/+$/g, '');
+const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const slugFromHash = () => decodeURIComponent(location.hash.replace(/^#/, '').split('?')[0]).trim().replace(/^\/+|\/+$/g, '');
 
 async function loadTags() {
   try {
-    const r = await fetch(`https://api.github.com/users/${OWNER}/gists?per_page=100`,
-      { headers: { Accept: 'application/vnd.github+json' } });
+    const r = await fetch(`https://api.github.com/users/${OWNER}/gists?per_page=100`, { headers: { Accept: 'application/vnd.github+json' } });
     if (r.ok) {
       const g = (await r.json()).find(g => g.files && g.files[GIST_FILE]);
       if (g) { const raw = await fetch(g.files[GIST_FILE].raw_url); if (raw.ok) return await raw.json(); }
@@ -210,27 +96,23 @@ async function loadTags() {
   return await lr.json();
 }
 
-const msg = (title, detail) => { say(title);
-  app.innerHTML = `<div><h1>${esc(title)}</h1><p class="muted">${esc(detail||'')}</p></div>`; };
+const msg = (title, detail) => { say(title); app.innerHTML = `<div><h1>${esc(title)}</h1><p class="muted">${esc(detail||'')}</p></div>`; };
 
 async function resolve() {
   const slug = slugFromHash();
-  if (!slug) { document.documentElement.classList.remove('resolving'); return; } // → landing
+  if (!slug) { document.documentElement.classList.remove('resolving'); return; }
   document.documentElement.classList.add('resolving');
   let tags;
   try { tags = await loadTags(); } catch { return msg('Can’t reach tags', 'Try again in a moment.'); }
   const tag = (tags.tags || tags)[slug];
   if (!tag) return msg('Unknown tag', `No destination set for “${slug}”.`);
   if (tag.type === 'page') { say(tag.title || 'Page');
-    app.innerHTML = `<div>${tag.title?`<h1>${esc(tag.title)}</h1>`:''}<div class="body">${esc(tag.body||'')}</div></div>`;
-    return; }
+    app.innerHTML = `<div>${tag.title?`<h1>${esc(tag.title)}</h1>`:''}<div class="body">${esc(tag.body||'')}</div></div>`; return; }
   if (tag.url) { say('Redirecting…');
-    app.innerHTML = `<div><div class="spin" aria-hidden="true"></div>
-      <p class="muted" style="margin-top:14px">Taking you to <a href="${esc(tag.url)}">${esc(tag.url)}</a>…</p></div>`;
-    location.replace(tag.url); return; } // replace() → no back-button pollution
+    app.innerHTML = `<div><div class="spin" aria-hidden="true"></div><p class="muted" style="margin-top:14px">Taking you to <a href="${esc(tag.url)}">${esc(tag.url)}</a>…</p></div>`;
+    location.replace(tag.url); return; }
   msg('Misconfigured tag', `“${slug}” has no url or page body.`);
 }
-
 addEventListener('hashchange', resolve);
 resolve();
 </script>
