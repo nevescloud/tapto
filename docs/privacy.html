@@ -52,7 +52,7 @@
     <h2>Data</h2>
     <ul>
       <li><strong>Only your sign-in is stored locally.</strong> Your GitHub access token (and the id of your tapto gist) live in <code>chrome.storage.local</code> and clear when you remove the extension. Sign-in uses the GitHub Device Flow (scope <code>gist</code>); the token is stored on your device and sent only to GitHub.</li>
-      <li><strong>Your tags live in your GitHub.</strong> The tags you create — names, destination links, and note text — are saved as a single <code>tapto.json</code> gist in your own GitHub account via <code>api.github.com</code>. Your GitHub username is read to label the panel and to form each tag's address.</li>
+      <li><strong>Your tags live in your GitHub.</strong> The tags you create — names, destination links, and note text — are saved as a single <code>tapto.json</code> gist in your own GitHub account via <code>api.github.com</code>. Your GitHub username is read only to label the panel; each tag's address uses the gist's id, not your name.</li>
       <li><strong>Your tag map is public.</strong> The gist is public, so anyone holding one of your tags can read where it points. Keep private destinations (home Wi-Fi, private documents) out of your tags.</li>
       <li><strong>Resolving a tag.</strong> Tags resolve through <code>neves.cloud/tapto</code>, a static page that runs in the visitor's browser: it reads your public gist and forwards. tapto operates no server and receives nothing about who taps a tag.</li>
     </ul>

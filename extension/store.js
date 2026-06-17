@@ -112,6 +112,7 @@ export async function writeMap(token, id, map) {
   return (await r.json()).id;
 }
 
-export function tagUrl(user, slug) {
-  return CONFIG.RESOLVER_BASE + '#u/' + encodeURIComponent(user) + '/' + encodeURIComponent(slug);
+export function tagUrl(gistId, slug) {
+  // Keyed on the immutable gist ID, not the username (rename-proof, direct lookup).
+  return CONFIG.RESOLVER_BASE + '#' + gistId + '/' + encodeURIComponent(slug);
 }

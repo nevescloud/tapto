@@ -6,7 +6,7 @@
 <title>tapto — reprogrammable NFC &amp; QR tags</title>
 <meta name="description" content="One tag, any destination, change it anytime — without rewriting the tag." />
 <meta name="color-scheme" content="light dark" />
-<!-- Anti-flash: on a real tag tap (#slug) hide the landing before first paint. -->
+<!-- Anti-flash: on a real tag tap (#…) hide the landing before first paint. -->
 <script>if (location.hash.length > 1) document.documentElement.classList.add('resolving');</script>
 <style>
   :root { --bg:#fbfbfa; --ink:#15140f; --muted:#6a685f; --line:#e7e5df; --card:#fff; }
@@ -64,7 +64,7 @@
       <a class="btn btn-primary badge" href="#" aria-disabled="true">Get the creator</a>
       <a class="btn btn-ghost" href="https://github.com/nevescloud/tapto">Source</a>
     </div>
-    <div class="demo">neves.cloud/tapto/#u/jonasneves/<b>desk</b> · <a href="#u/jonasneves/desk">tap it</a></div>
+    <div class="demo">neves.cloud/tapto/#964ac02a…/<b>desk</b> · <a href="#964ac02a2a06dfb6986b3942fb6ea78d/desk">tap it</a></div>
     <footer><a href="https://neves.cloud">neves.cloud</a></footer>
   </div>
 </div>
@@ -73,12 +73,12 @@
 <p role="status" aria-live="polite" id="sr" class="muted" style="position:absolute;left:-9999px">Loading…</p>
 
 <script type="module">
-// Multi-tenant resolver. A tag bakes  neves.cloud/tapto/#u/<user>/<slug>  — the
-// fragment carries WHOSE map to read, so one static page serves everyone. This page
-// only READS the user's public gist; editing happens in the creator extension.
-const GIST_FILE = 'tapto.json';
-const HOME_OWNER = 'jonasneves';      // only this owner gets the committed offline fallback
-const LOCAL_FALLBACK = 'tags.json';
+// Resolver. A tag bakes  neves.cloud/tapto/#<gistId>/<slug>  — the fragment names the
+// gist (the map) and the entry. Keyed on the gist ID, not the username: gist IDs are
+// immutable across account renames and edits, so a baked tag stays valid forever. One
+// direct GET /gists/<id> (content inline) — no list/scan, no per_page cap. This page
+// only READS; editing happens in the creator extension.
+const GIST_FILE = 'tapto.json';   // preferred file in the gist (falls back to the first file)
 
 const app = document.getElementById('app');
 const sr  = document.getElementById('sr');
@@ -86,29 +86,22 @@ const say = (m) => { sr.textContent = m; };
 const esc = (s) => String(s).replace(/[&<>"']/g, c =>
   ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 
-// #u/<user>/<slug> → {user, slug}; bare #<slug> → {user:null}; empty → null (landing).
+// #<gistId>/<slug> → {gistId, slug}; empty → null (landing).
 function parseHash() {
   const h = decodeURIComponent(location.hash.replace(/^#/, '').split('?')[0]).replace(/^\/+|\/+$/g, '');
   if (!h) return null;
   const p = h.split('/');
-  if (p[0] === 'u' && p.length >= 3) return { user: p[1], slug: p.slice(2).join('/') };
-  return { user: null, slug: h };
+  return { gistId: p[0], slug: p.slice(1).join('/') };
 }
 
-async function loadTags(user) {
-  try {
-    const r = await fetch(`https://api.github.com/users/${user}/gists?per_page=100`,
-      { headers: { Accept: 'application/vnd.github+json' } });
-    if (r.ok) {
-      const g = (await r.json()).find(g => g.files && g.files[GIST_FILE]);
-      if (g) { const raw = await fetch(g.files[GIST_FILE].raw_url); if (raw.ok) return await raw.json(); }
-    }
-  } catch { /* fall through */ }
-  if (user === HOME_OWNER) {
-    const lr = await fetch(LOCAL_FALLBACK, { cache: 'no-store' });
-    if (lr.ok) return await lr.json();
-  }
-  throw new Error('no source');
+async function loadTags(gistId) {
+  const r = await fetch(`https://api.github.com/gists/${gistId}`, { headers: { Accept: 'application/vnd.github+json' } });
+  if (!r.ok) throw new Error('gist');
+  const g = await r.json();
+  const f = g.files && (g.files[GIST_FILE] || Object.values(g.files)[0]);
+  if (!f) throw new Error('empty');
+  const text = f.truncated ? await (await fetch(f.raw_url)).text() : f.content; // content inline unless >1MB
+  return JSON.parse(text);
 }
 
 const msg = (title, detail) => { say(title);
@@ -118,12 +111,12 @@ async function resolve() {
   const h = parseHash();
   if (!h) { document.documentElement.classList.remove('resolving'); return; } // → landing
   document.documentElement.classList.add('resolving');
-  if (!h.user) return msg('Incomplete tag link', 'This link is missing its account — it should look like …/#u/<user>/<slug>.');
+  if (!h.slug) return msg('Incomplete tag link', 'This link is missing its tag name — it should look like …/#<gist-id>/<slug>.');
   let tags;
-  try { tags = await loadTags(h.user); }
-  catch { return msg('Can’t reach tags', `Couldn’t load @${h.user}’s tags. Try again in a moment.`); }
+  try { tags = await loadTags(h.gistId); }
+  catch { return msg('Can’t reach tags', 'Couldn’t load this tag map. Try again in a moment.'); }
   const tag = (tags.tags || tags)[h.slug];
-  if (!tag) return msg('Unknown tag', `@${h.user} has no destination set for “${h.slug}”.`);
+  if (!tag) return msg('Unknown tag', `No destination set for “${h.slug}”.`);
   if (tag.type === 'page') { say(tag.title || 'Page');
     app.innerHTML = `<div>${tag.title?`<h1>${esc(tag.title)}</h1>`:''}<div class="body">${esc(tag.body||'')}</div></div>`; return; }
   if (tag.url) { say('Redirecting…');

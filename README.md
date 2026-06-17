@@ -1,7 +1,7 @@
 # tapto
 
 Reprogrammable NFC/QR tags. A tag carries a short, stable URL —
-`https://neves.cloud/tapto/#u/<user>/<slug>` — and *where it goes* lives in editable config,
+`https://neves.cloud/tapto/#<gist-id>/<slug>` — and *where it goes* lives in editable config,
 not baked into the tag. Repoint a tag by editing config; never rewrite the tag.
 
 The same slug URL works on any carrier: an NFC tag, a printed QR code, or a plain
@@ -11,7 +11,7 @@ slug, so the printed code is dynamic too.
 ## How it works
 
 ```
-tap / scan ─▶ neves.cloud/tapto/#u/<user>/<slug> ─▶ look up <slug> in the tag map ─▶ redirect or render
+tap / scan ─▶ neves.cloud/tapto/#<gist-id>/<slug> ─▶ look up <slug> in the tag map ─▶ redirect or render
 ```
 
 - **Resolver** (`index.html`) — a static page. The `#slug` fragment never leaves the
@@ -48,8 +48,9 @@ tap / scan ─▶ neves.cloud/tapto/#u/<user>/<slug> ─▶ look up <slug> in th
 
 ## Self-hosting
 
-Edit the constants at the top of `index.html` (`OWNER`, `GIST_FILE`) and
-`extension/store.js` (`CONFIG`). For the extension’s one-tap sign-in, register a
-GitHub OAuth App with Device Flow enabled and `gist` scope, and set
+The resolver (`index.html`) needs no per-user config — it resolves any gist by id.
+To host it elsewhere, deploy `docs/` to your own static host and point
+`extension/store.js` `CONFIG.RESOLVER_BASE` at it. For the extension’s one-tap
+sign-in, register a GitHub OAuth App with Device Flow enabled and `gist` scope, and set
 `CONFIG.CLIENT_ID`. Until then the extension’s “paste a token” option works with a
 fine-grained `gist`-scoped token.

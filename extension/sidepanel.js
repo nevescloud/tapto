@@ -64,7 +64,10 @@ $('tPage').onclick = () => setType('page');
 
 // ── live preview ───────────────────────────────────────────────────────────────
 const slugify = (s) => s.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
-$('slug').oninput = () => { $('preview').innerHTML = `neves.cloud/tapto/#u/${me}/<b>${slugify($('slug').value) || '…'}</b>`; };
+$('slug').oninput = () => {
+  const gid = gistId ? gistId.slice(0, 7) + '…' : 'your-gist';   // gist created on first save
+  $('preview').innerHTML = `neves.cloud/tapto/#${gid}/<b>${slugify($('slug').value) || '…'}</b>`;
+};
 
 // ── tag list (navigate: edit / delete) ─────────────────────────────────────────
 function destLabel(t) { return t.type === 'page' ? `note · ${t.title || 'untitled'}` : (t.url || ''); }
@@ -138,7 +141,7 @@ $('save').onclick = async () => {
 
 // ── result (QR + URL + copy) ───────────────────────────────────────────────────
 function showResult(slug) {
-  const url = tagUrl(me, slug);
+  const url = tagUrl(gistId, slug);
   const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
   $('qr').innerHTML = qr.createSvgTag({ scalable: true, margin: 0 });
   $('url').textContent = url;

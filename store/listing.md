@@ -87,7 +87,7 @@ The entire creator UI is a Chrome side panel.
 
 The dashboard collapses all hosts into **one** "Host permission" field — paste:
 ```
-https://github.com/login/device/* and https://github.com/login/oauth/* run the GitHub Device Flow sign-in (request a device code, poll for the access token; no client secret). https://api.github.com/* reads the signed-in user's GitHub username (shown in the panel and used in each tag's address) and reads/writes the single "tapto.json" gist that holds the user's tag map.
+https://github.com/login/device/* and https://github.com/login/oauth/* run the GitHub Device Flow sign-in (request a device code, poll for the access token; no client secret). https://api.github.com/* reads the signed-in user's GitHub username (shown in the panel) and reads/writes the single "tapto.json" gist that holds the user's tag map (each tag's address uses that gist's id).
 ```
 
 ## Remote code
@@ -97,7 +97,7 @@ https://github.com/login/device/* and https://github.com/login/oauth/* run the G
 - **Check exactly two categories:**
   - **Website content** — the tags the user creates (names, destination URLs, note text) are sent to GitHub to store in the user's own gist.
   - **Authentication information** — the GitHub OAuth token (stored locally, sent only to GitHub).
-- **Leave unchecked, incl. PII:** there is no tapto server, so nothing is collected by the developer. The GitHub username is read for the panel label and the tag address but is not transmitted anywhere except GitHub itself. Nothing else (no location, web history, activity, comms, financial, health).
+- **Leave unchecked, incl. PII:** there is no tapto server, so nothing is collected by the developer. The GitHub username is read only for the panel label but is not transmitted anywhere except GitHub itself. Nothing else (no location, web history, activity, comms, financial, health).
 - **Certify all three** (all true): no selling/transfer outside approved uses · no use for unrelated purposes · no creditworthiness/lending. The GitHub transfer is "for the item's single purpose," which the first certification permits.
 - **Privacy policy URL** (dedicated field, never the description):
 ```
