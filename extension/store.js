@@ -1,7 +1,7 @@
 // ── tapto creator — auth + gist storage (shared) ─────────────────────────────
 // The creator is the ONLY surface that authenticates. It runs as an extension so
-// the device flow is proxy-free: `host_permissions` for github.com/login/* lets
-// these POSTs go direct (a Pages tab can't — that's why opal/docs uses a CORS
+// the device flow is proxy-free: `host_permissions` for github.com/login/device/*
+// + login/oauth/* lets these POSTs go direct (a Pages tab can't — opal/docs uses a CORS
 // shim). The public resolver never imports this; it only READS the gist.
 //
 // Token acquisition is pluggable: device flow once you've registered the OAuth

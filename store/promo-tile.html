@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>tapto — promo tile</title>
+<!--
+  Chrome Web Store promo-tile harness (adapted from canvasflow/store/promo-tile.html).
+  Self-contained: the glyph is inlined, so no served-icon path is needed.
+  Render by sizing the viewport to the slot and screenshotting:
+    small marquee → 440×280 · marquee → 1400×560
+  `?tag=…` overrides the tagline.
+-->
+<style>
+  * { margin:0; box-sizing:border-box; }
+  html, body { width:100%; height:100%; overflow:hidden;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; }
+  .tile {
+    width:100vw; height:100vh;
+    background:radial-gradient(120% 140% at 78% 18%, #2a2622 0%, #15140f 60%);
+    color:#fbfbfa; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center;
+    gap:3vh; padding:0 8%;
+  }
+  .glyph { width:15vh; height:15vh; min-width:56px; min-height:56px; max-width:128px; max-height:128px; }
+  .wordmark { font-size:clamp(28px,11vh,96px); font-weight:800; letter-spacing:-.03em; line-height:1; }
+  .wordmark b { color:#964ac0; font-weight:800; }
+  .tag { font-size:clamp(13px,4.6vh,30px); opacity:.85; max-width:24ch; line-height:1.25; }
+</style>
+</head>
+<body>
+  <div class="tile">
+    <svg class="glyph" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+      <g fill="none" stroke="#fbfbfa" stroke-width="7.5" stroke-linecap="round">
+        <path d="M48.7 47.7 A22 22 0 0 1 48.7 80.3"/>
+        <path d="M58.1 37.3 A36 36 0 0 1 58.1 90.7"/>
+        <path d="M67.5 26.9 A50 50 0 0 1 67.5 101.1"/>
+      </g>
+      <circle cx="40" cy="64" r="7.5" fill="#964ac0"/>
+    </svg>
+    <div class="wordmark">tap<b>to</b></div>
+    <p class="tag" id="tag">Reprogrammable NFC &amp; QR tags — repoint anytime, never rewrite.</p>
+  </div>
+  <script>
+    const t = new URLSearchParams(location.search).get('tag');
+    if (t) document.getElementById('tag').textContent = t;
+  </script>
+</body>
+</html>

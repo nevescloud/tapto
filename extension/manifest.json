@@ -1,11 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "tapto — creator",
+  "name": "tapto — Reprogrammable NFC & QR Tags",
   "version": "0.1.0",
-  "description": "Create and edit NFC/QR tags that resolve through neves.cloud/tapto. Writes your tag map to a GitHub gist.",
+  "description": "Create NFC and QR tags you can repoint anytime — change where a tag goes without ever rewriting it. Your data in your own GitHub.",
   "permissions": ["storage", "sidePanel"],
   "host_permissions": [
-    "https://github.com/login/*",
+    "https://github.com/login/device/*",
+    "https://github.com/login/oauth/*",
     "https://api.github.com/*"
   ],
   "background": { "service_worker": "background.js" },
