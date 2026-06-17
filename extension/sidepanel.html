@@ -7,14 +7,14 @@
 <style>
   :root {
     --bg:#fbfbfa; --surface:#fff; --subtle:#f4f3f0; --ink:#15140f; --muted:#6a685f;
-    --faint:#9a988e; --line:#e7e5df; --line-strong:#d8d5cc; --focus:#0a84ff;
+    --faint:#83817a; --line:#e7e5df; --line-strong:#d8d5cc; --focus:#0a84ff;
     --r:11px; --pad:16px;
     --font:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;
     --mono:ui-monospace,SFMono-Regular,'SF Mono',Menlo,monospace;
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg:#0d0d0c; --surface:#161614; --subtle:#1d1d1a; --ink:#ededea; --muted:#8a877e;
-            --faint:#6f6c64; --line:#262521; --line-strong:#37362f; --focus:#0a84ff; }
+            --faint:#7f7c73; --line:#262521; --line-strong:#37362f; --focus:#0a84ff; }
   }
   * { box-sizing:border-box; }
   html,body { margin:0; height:100%; }
@@ -29,6 +29,9 @@
   .appbar { position:sticky; top:0; z-index:2; display:flex; align-items:center; justify-content:space-between;
             padding:12px var(--pad); background:color-mix(in srgb,var(--bg) 86%,transparent);
             backdrop-filter:saturate(1.4) blur(10px); border-bottom:1px solid var(--line); }
+  /* HIG: a translucent material needs an opaque fallback (Reduce Transparency / forced colors). */
+  @media (prefers-contrast: more), (forced-colors: active) { .appbar { background:var(--bg); backdrop-filter:none; } }
+  @supports not (backdrop-filter: blur(1px)) { .appbar { background:var(--bg); } }
   .logo { display:flex; align-items:center; gap:8px; font-size:16px; font-weight:650; letter-spacing:-.02em; }
   .logo svg { display:block; }
   .acct { display:flex; align-items:center; gap:10px; font-size:12px; color:var(--muted); }
