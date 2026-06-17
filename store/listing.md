@@ -41,7 +41,7 @@ The store offers five image slots; what we provide:
 | Asset | Spec | Source | Status |
 |---|---|---|---|
 | Store icon | 128×128 | `extension/icons/icon-128.png` | auto ✓ |
-| Screenshots (≥1, up to 5) | 1280×800 JPEG/PNG | side panel: (1) tag list + editor, (2) result with QR + URL, (3) a resolved tag on a phone | ❌ to generate |
+| Screenshots (≥1, up to 5) | 1280×800 JPEG/PNG | `store/screenshots/01-create` (tag list + editor) · `02-share` (QR + URL) | ✓ generated (harness: `store/shots.html`) |
 | Small promo tile | 440×280 | — | optional |
 | Marquee promo tile | 1400×560 | — | optional (featuring only) |
 | Promo video | YouTube URL | — | skipped |

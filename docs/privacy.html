@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>tapto — Privacy Policy</title>
+<meta name="description" content="tapto's privacy policy: no server, your tags live in your own GitHub gist, only your sign-in is stored locally.">
+<meta name="color-scheme" content="light dark">
+<style>
+  :root { --bg:#f4f3f0; --card:#fff; --ink:#15140f; --muted:#6a685f; --line:#e7e5df; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0d0d0c; --card:#161614; --ink:#ededea; --muted:#8a877e; --line:#262521; }
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+         line-height:1.7; color:var(--ink); background:var(--bg); -webkit-font-smoothing:antialiased; padding:3rem 1.5rem; }
+  a { color:inherit; text-decoration:underline; text-underline-offset:2px; }
+  :focus-visible { outline:2px solid #0a84ff; outline-offset:2px; border-radius:4px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px;
+          max-width:720px; margin:0 auto; padding:2.75rem 2.5rem; }
+  .brand { display:flex; align-items:center; gap:.6rem; margin-bottom:1.6rem; font-size:1.15rem; font-weight:700; letter-spacing:-.02em; }
+  .brand a { text-decoration:none; }
+  h1 { font-size:1.8rem; line-height:1.25; margin-bottom:.35rem; letter-spacing:-.01em; }
+  .updated { color:var(--muted); font-size:.9rem; margin-bottom:1.6rem; }
+  h2 { font-size:1.12rem; margin:1.8rem 0 .5rem; }
+  p, li { color:var(--ink); }
+  ul { padding-left:1.2rem; margin:.4rem 0 .8rem; }
+  li { margin-bottom:.55rem; }
+  code { background:var(--bg); border:1px solid var(--line); border-radius:4px; padding:.05em .35em;
+         font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.9em; }
+</style>
+</head>
+<body>
+  <main class="card">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 128 128" aria-hidden="true">
+        <rect width="128" height="128" rx="28" fill="currentColor"/>
+        <g fill="none" stroke="var(--card)" stroke-width="7.5" stroke-linecap="round">
+          <path d="M48.7 47.7 A22 22 0 0 1 48.7 80.3"/>
+          <path d="M58.1 37.3 A36 36 0 0 1 58.1 90.7"/>
+          <path d="M67.5 26.9 A50 50 0 0 1 67.5 101.1"/>
+        </g>
+        <circle cx="40" cy="64" r="7.5" fill="var(--card)"/>
+      </svg>
+      <a href="./">tapto</a>
+    </div>
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: 2026-06-17</p>
+
+    <p>tapto turns NFC tags and QR codes into reprogrammable links. It has no backend of its own — your tags live in your own GitHub account.</p>
+
+    <h2>Data</h2>
+    <ul>
+      <li><strong>Only your sign-in is stored locally.</strong> Your GitHub access token (and the id of your tapto gist) live in <code>chrome.storage.local</code> and clear when you remove the extension. Sign-in uses the GitHub Device Flow (scope <code>gist</code>); the token is stored on your device and sent only to GitHub.</li>
+      <li><strong>Your tags live in your GitHub.</strong> The tags you create — names, destination links, and note text — are saved as a single <code>tapto.json</code> gist in your own GitHub account via <code>api.github.com</code>. Your GitHub username is read to label the panel and to form each tag's address.</li>
+      <li><strong>Your tag map is public.</strong> The gist is public, so anyone holding one of your tags can read where it points. Keep private destinations (home Wi-Fi, private documents) out of your tags.</li>
+      <li><strong>Resolving a tag.</strong> Tags resolve through <code>neves.cloud/tapto</code>, a static page that runs in the visitor's browser: it reads your public gist and forwards. tapto operates no server and receives nothing about who taps a tag.</li>
+    </ul>
+
+    <h2>Not done</h2>
+    <p>No tracking, analytics, cookies, or ads. No data is sold or shared beyond storing your tags in your own GitHub — provider use follows <a href="https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement">GitHub's privacy statement</a>.</p>
+
+    <h2>Contact</h2>
+    <p>Email <a href="mailto:tapto@neves.cloud">tapto@neves.cloud</a>. Policy changes are dated above.</p>
+  </main>
+</body>
+</html>
