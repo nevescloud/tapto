@@ -85,7 +85,7 @@ export async function connectDevice(onUserCode) {
 
 // ── gist map: find-or-create the single tapto.json gist, read/patch its JSON ──
 async function findGist(token) {
-  const r = await fetch(`${API}/gists?per_page=100`, { headers: { Authorization: `Bearer ${token}` } });
+  const r = await fetch(`${API}/gists?per_page=100`, { cache: 'no-store', headers: { Authorization: `Bearer ${token}` } });
   if (!r.ok) throw new Error(`gist list failed (${r.status})`);
   return (await r.json()).find(g => g.files && g.files[CONFIG.GIST_FILE]) || null;
 }
@@ -93,7 +93,7 @@ async function findGist(token) {
 export async function readMap(token) {
   const g = await findGist(token);
   if (!g) return { id: null, map: { version: 1, tags: {} } };
-  const raw = await fetch(g.files[CONFIG.GIST_FILE].raw_url);
+  const raw = await fetch(g.files[CONFIG.GIST_FILE].raw_url, { cache: 'no-store' });
   return { id: g.id, map: raw.ok ? await raw.json() : { version: 1, tags: {} } };
 }
 

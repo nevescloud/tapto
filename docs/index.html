@@ -95,12 +95,16 @@ function parseHash() {
 }
 
 async function loadTags(gistId) {
-  const r = await fetch(`https://api.github.com/gists/${gistId}`, { headers: { Accept: 'application/vnd.github+json' } });
+  // no-store on every gist read: a reprogrammed tag must resolve fresh, never a
+  // cached (stale) destination from GitHub's max-age. (The HTML shell can cache;
+  // the destination never lives in it.)
+  const r = await fetch(`https://api.github.com/gists/${gistId}`,
+    { cache: 'no-store', headers: { Accept: 'application/vnd.github+json' } });
   if (!r.ok) throw new Error('gist');
   const g = await r.json();
   const f = g.files && (g.files[GIST_FILE] || Object.values(g.files)[0]);
   if (!f) throw new Error('empty');
-  const text = f.truncated ? await (await fetch(f.raw_url)).text() : f.content; // content inline unless >1MB
+  const text = f.truncated ? await (await fetch(f.raw_url, { cache: 'no-store' })).text() : f.content; // inline unless >1MB
   return JSON.parse(text);
 }
 
