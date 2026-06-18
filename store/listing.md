@@ -24,7 +24,7 @@ Create NFC and QR tags you can repoint anytime — change where a tag goes witho
 `Productivity` (dropdown)
 
 ## Website / Support URLs (dashboard "Store listing" → Additional fields)
-Both point at the landing page; per-project support address is `tapto@neves.cloud`.
+Both point at the landing page; per-project support address is `extensions@neves.cloud`.
 
 Homepage / Website:
 ```
