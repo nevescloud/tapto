@@ -23,13 +23,15 @@ export const CONFIG = {
 const GH = 'https://github.com';            // device endpoints (host_permissions → no proxy)
 const API = 'https://api.github.com';       // gist CRUD (CORS-clean anyway)
 const KEY = 'tapto-auth';
+const GKEY = 'tapto-gist';   // remembered gist id — the store listing's `storage` justification
+                             // promises we do this; until now we re-discovered it every boot.
 
 const form = (o) => new URLSearchParams(o);
 const jget = async (k) => (await chrome.storage.local.get(k))[k] || null;
 
 export async function getToken() { return (await jget(KEY))?.token || null; }
 export async function getUser()  { return (await jget(KEY))?.user || null; }
-export async function signOut()  { await chrome.storage.local.remove(KEY); }
+export async function signOut()  { await chrome.storage.local.remove([KEY, GKEY]); }
 
 async function saveSession(token) {
   const r = await fetch(`${API}/user`, { headers: { Authorization: `Bearer ${token}` } });
@@ -84,17 +86,37 @@ export async function connectDevice(onUserCode) {
 }
 
 // ── gist map: find-or-create the single tapto.json gist, read/patch its JSON ──
+// Discovery is the FALLBACK, not the normal path. Listing has three defects that only
+// show up on a real account: it caps at 100 gists (a heavier user's map becomes invisible
+// and the next save silently forks a second one), it picks the first match when two exist,
+// and it spends a request re-learning an id we already knew. Once the id is remembered,
+// none of that can fire.
 async function findGist(token) {
   const r = await fetch(`${API}/gists?per_page=100`, { cache: 'no-store', headers: { Authorization: `Bearer ${token}` } });
   if (!r.ok) throw new Error(`gist list failed (${r.status})`);
   return (await r.json()).find(g => g.files && g.files[CONFIG.GIST_FILE]) || null;
 }
 
+const parseFile = async (f) =>
+  JSON.parse(f.truncated ? await (await fetch(f.raw_url, { cache: 'no-store' })).text() : f.content);
+
 export async function readMap(token) {
+  const known = await jget(GKEY);
+  if (known) {
+    const r = await fetch(`${API}/gists/${known}`, { cache: 'no-store', headers: { Authorization: `Bearer ${token}` } });
+    if (r.ok) {
+      const g = await r.json();
+      const f = g.files && g.files[CONFIG.GIST_FILE];
+      if (f) return { id: g.id, map: await parseFile(f) };
+    }
+    // Remembered id is gone — gist deleted, or this token is a different account.
+    // Drop it and fall through to discovery rather than stranding the user.
+    await chrome.storage.local.remove(GKEY);
+  }
   const g = await findGist(token);
   if (!g) return { id: null, map: { version: 1, tags: {} } };
-  const raw = await fetch(g.files[CONFIG.GIST_FILE].raw_url, { cache: 'no-store' });
-  return { id: g.id, map: raw.ok ? await raw.json() : { version: 1, tags: {} } };
+  await chrome.storage.local.set({ [GKEY]: g.id });
+  return { id: g.id, map: await parseFile(g.files[CONFIG.GIST_FILE]) };
 }
 
 export async function writeMap(token, id, map) {
@@ -109,7 +131,9 @@ export async function writeMap(token, id, map) {
     body,
   });
   if (!r.ok) throw new Error(`gist save failed (${r.status})`);
-  return (await r.json()).id;
+  const saved = (await r.json()).id;
+  await chrome.storage.local.set({ [GKEY]: saved });   // first save is where the id is born
+  return saved;
 }
 
 export function tagUrl(gistId, slug) {

@@ -1,5 +1,10 @@
-import { getToken, getUser, signOut, connectDevice, signInWithPAT,
+import { CONFIG, getToken, getUser, signOut, connectDevice, signInWithPAT,
          readMap, writeMap, tagUrl } from './store.js';
+
+// Display form of the resolver origin. Derived from CONFIG so the preview can never
+// disagree with the address actually baked into a tag — the one string in this UI that
+// is a promise about a physical object.
+const ORIGIN = CONFIG.RESOLVER_BASE.replace(/^https?:\/\//, '');
 
 const $ = (id) => document.getElementById(id);
 const show = (el, on) => el.classList.toggle('hide', !on);
@@ -66,7 +71,7 @@ $('tPage').onclick = () => setType('page');
 const slugify = (s) => s.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
 $('slug').oninput = () => {
   const gid = gistId ? gistId.slice(0, 7) + '…' : 'your-gist';   // gist created on first save
-  $('preview').innerHTML = `neves.cloud/tapto/#${gid}/<b>${slugify($('slug').value) || '…'}</b>`;
+  $('preview').innerHTML = `${ORIGIN}#${gid}/<b>${slugify($('slug').value) || '…'}</b>`;
 };
 
 // ── tag list (navigate: edit / delete) ─────────────────────────────────────────
@@ -79,10 +84,17 @@ function renderList() {
   ul.innerHTML = '';
   for (const slug of slugs) {
     const li = document.createElement('li'); li.className = 'row';
+    // Slugs are read back from the gist, which is hand-editable — so they are data, not
+    // trusted markup, even though the editor only ever writes [a-z0-9-]. textContent for
+    // both, matching what .d already did.
     li.innerHTML =
-      `<button class="open" type="button"><span class="s">#${slug}</span><span class="d"></span></button>
-       <button class="del" type="button" title="Delete #${slug}" aria-label="Delete ${slug}">×</button>`;
+      `<button class="open" type="button"><span class="s"></span><span class="d"></span></button>
+       <button class="del" type="button">×</button>`;
+    li.querySelector('.s').textContent = '#' + slug;
     li.querySelector('.d').textContent = destLabel(tags[slug]);
+    const del = li.querySelector('.del');
+    del.title = `Delete #${slug}`;
+    del.setAttribute('aria-label', `Delete ${slug}`);
     li.querySelector('.open').onclick = () => editTag(slug);
     li.querySelector('.del').onclick = () => delTag(slug);
     ul.appendChild(li);

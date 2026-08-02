@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "tapto — Reprogrammable NFC & QR Tags",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Create NFC and QR tags you can repoint anytime — change where a tag goes without ever rewriting it. Your data in your own GitHub.",
   "permissions": ["storage", "sidePanel"],
   "host_permissions": [
