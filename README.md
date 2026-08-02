@@ -26,6 +26,16 @@ look up <slug> in the tag map
 - **Resolver** (`index.html`) — a static page. The `#slug` fragment never leaves the
   browser, so one file routes every tag. It reads the tag map (public, unauthenticated)
   and either redirects or renders a page in place.
+
+  > **Read path and its ceiling.** The map is read from the gist API, which is capped at
+  > **60 requests/hour per source IP** for unauthenticated callers — and phones tap tags
+  > from behind carrier-grade NAT, where that bucket is shared with every other
+  > unauthenticated caller on the carrier. The resolver falls back to the (unmetered) gist
+  > CDN and then to a last-known-good copy in `localStorage`, so a repeat tap survives.
+  > A device that has *never* resolved a given tag, on an IP whose quota is spent, still
+  > fails. Conditional requests are not a way out: GitHub documents 304s as free against
+  > the rate limit, but on this *unauthenticated* endpoint a 304 still decrements it
+  > (measured 2026-08-01 — three successive `If-None-Match` requests read 57 → 56 → 55).
 - **Tag map** — JSON in a public GitHub gist:
   ```json
   {

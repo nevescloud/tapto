@@ -92,18 +92,56 @@ function parseHash() {
   return { gistId: p[0], slug: p.slice(1).join('/') };
 }
 
+// Last-known-good per gist. The unauthenticated API cap is 60/hour PER SOURCE IP, and
+// phones tapping tags sit behind carrier-grade NAT — thousands of subscribers sharing one
+// bucket with every other unauthenticated api.github.com caller on that carrier. So a tag
+// can fail for reasons that have nothing to do with its owner. Conditional requests do NOT
+// rescue this: a 304 still decrements the counter (measured 2026-08-01, 57→56→55).
+const memo = {
+  key: (id) => 'tapto:' + id,
+  save(id, owner, map) { try { localStorage.setItem(this.key(id), JSON.stringify({ owner, map })); } catch {} },
+  load(id) { try { return JSON.parse(localStorage.getItem(this.key(id)) || 'null'); } catch { return null; } },
+};
+
+// Three rungs, most-authoritative first. Only rung 1 is metered, and only rung 1 is
+// instant — which is why it stays the normal path: a repoint must land on the next tap.
 async function loadTags(gistId) {
-  // no-store on every gist read: a reprogrammed tag must resolve fresh, never a
-  // cached (stale) destination from GitHub's max-age. (The HTML shell can cache;
-  // the destination never lives in it.)
-  const r = await fetch(`https://api.github.com/gists/${gistId}`,
-    { cache: 'no-store', headers: { Accept: 'application/vnd.github+json' } });
-  if (!r.ok) throw new Error('gist');
-  const g = await r.json();
-  const f = g.files && (g.files[GIST_FILE] || Object.values(g.files)[0]);
-  if (!f) throw new Error('empty');
-  const text = f.truncated ? await (await fetch(f.raw_url, { cache: 'no-store' })).text() : f.content; // inline unless >1MB
-  return JSON.parse(text);
+  const prev = memo.load(gistId);
+
+  // 1. The API. no-store so a reprogrammed tag never serves a stale destination.
+  try {
+    const r = await fetch(`https://api.github.com/gists/${gistId}`,
+      { cache: 'no-store', headers: { Accept: 'application/vnd.github+json' } });
+    if (r.ok) {
+      const g = await r.json();
+      const f = g.files && (g.files[GIST_FILE] || Object.values(g.files)[0]);
+      if (!f) throw new Error('empty');
+      const text = f.truncated ? await (await fetch(f.raw_url, { cache: 'no-store' })).text() : f.content; // inline unless >1MB
+      const map = JSON.parse(text);
+      memo.save(gistId, g.owner && g.owner.login, map);   // owner login is rung 2's key
+      return map;
+    }
+  } catch {}
+
+  // 2. Rate-limited or offline. The gist CDN is unmetered and CORS-open, but its path needs
+  //    the owner login — which the tag deliberately does not carry (gist ids are rename-proof,
+  //    logins are not), so only a prior successful read on THIS device can have taught it.
+  if (prev && prev.owner) {
+    try {
+      const c = await fetch(`https://gist.githubusercontent.com/${prev.owner}/${gistId}/raw/${GIST_FILE}`,
+        { cache: 'no-store' });
+      if (c.ok) { const map = JSON.parse(await c.text()); memo.save(gistId, prev.owner, map); return map; }
+    } catch {}
+  }
+
+  // 3. Last-known-good. Up to ~5 min stale beats a dead tag on a printed object.
+  if (prev && prev.map) return prev.map;
+
+  // Residual, stated plainly: a device that has NEVER resolved this tag, on an IP whose
+  // 60/hr is spent, has nothing to fall back to. Removing it entirely needs either the owner
+  // login baked into every tag URL (which forfeits the rename-proofing gist ids buy) or a
+  // resolver each owner hosts themselves — both change what a tag is, not just how it loads.
+  throw new Error('unreachable');
 }
 
 const msg = (title, detail) => { say(title);
